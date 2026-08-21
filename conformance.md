@@ -248,3 +248,19 @@ README section): spec version, checklist status (all items closed or a
 pointer to the covering test), showcase run output archive, and the
 deviations register link. New releases re-run §4 and re-attest the
 checklist.
+### 3.4 Extended golden scenarios (supplementary Class A evidence)
+
+In addition to §3.3, SDK test suites SHOULD cover these rulings made after
+the baseline (all verified byte-for-byte on both reference
+implementations):
+
+| Scenario | Expected behaviour |
+|---|---|
+| `user add -- -v` | `-v` is positional data: command output, not a version line |
+| `user add -- --json` | `--json` is positional data |
+| `--xyz.addr=:9` after `--` | not stripped from the argument list |
+| validation `validate="gt=1.5"` with value 1.4 | fails with the rule; value 1.6 passes |
+| aligned table with a CJK header/cell | byte-identical across SDKs (widths in bytes, padding in characters) |
+| MCP `tools/call math.sum` | textContent is exactly `3` — no trailing newline |
+| HTTP POST marked `application/json` with an unparseable body | 400 `{"error":"invalid JSON body"}`; the same body without a JSON declaration falls through to form binding |
+| `SearchArgs` via `--query` (`--q` is an unknown flag) | `--query golang` returns `top 25` under CLI defaults |

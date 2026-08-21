@@ -108,6 +108,16 @@ carries serde + serde_json (and chrono for timestamps) as the
 zero-dependency. Spec wording already absorbs this; registered for
 provenance.
 
+### D-rust-11 · spec §13.7 (per-request HTTP cancellation)
+**Class:** SDK limitation
+**Status:** open
+**Detail:** Go cancels the handler context when the client disconnects
+(`r.Context()`). The Rust HTTP handler receives the serve-level `Ctx`
+only; a client disconnect does not cancel an already-running (synchronous)
+handler. Spec §13.7 records the asymmetry as SHOULD; future Rust work may
+switch to a per-request child context threaded through the shared
+pipeline.
+
 ### D-rust-10 · spec §4.1 (serde rename fallback)
 **Class:** extension
 **Status:** open

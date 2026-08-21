@@ -341,6 +341,9 @@ charset=utf-8`.
 implementations preserve declaration order; maps likewise render in the
 language's serialisation order). Float display rounds through the shortest
 representation the language's number formatting gives (`2.5`, `3`).
+Aligned rendering measures column **widths in bytes** and pads **in
+characters** (the reference implementations' hybrid; required to keep
+tables byte-identical when CJK text appears in headers or cells).
 
 Note (language-forced divergence, registered in deviations.md): languages
 without structural reflection may not distinguish struct and map values
@@ -412,7 +415,9 @@ excluded by §4.1 receive header values keyed by the language field name.
 - `GET /openapi.json` → OpenAPI 3.0.3 document generated from the same
   `inputSchema`s; per-operation summary/parameters (path+query)/requestBody
   (POST/PUT/PATCH)/responses (200 with the output schema content, plus the
-  taxonomy's 400/404/500 descriptions).
+  taxonomy's 400/404/500 descriptions). `info.title`/`info.version` are
+  reference-pinned to `example service`/`1` until the spec introduces a
+  configurable identity for them.
 
 **11.4. Middleware.** Served layers, outermost-first, in this fixed order:
 CORS → Bearer → Gzip → router. CORS: allowlisted origins (or `*`); OPTIONS
@@ -534,7 +539,10 @@ orthogonal.
 **13.7. Cancellation.** The dispatcher owns one signal context
 (SIGINT/SIGTERM) that reaches CLI/HTTP/MCP handlers; HTTP drains in-flight
 requests before exit (reference grant 5 s); stdio MCP treats client
-disconnect as normal exit 0.
+disconnect as normal exit 0. In HTTP, the *request's own* cancellation
+(client disconnect) SHOULD additionally cancel the handler context (Go
+does via `r.Context()`; Rust currently propagates only the serve-level
+context — registered in deviations.md as D-rust-11).
 
 **13.8. Version.** Version answer for `-v` is library-defined, overridable
 per language's build mechanism (Go: ldflags; Rust: `set_version`).
