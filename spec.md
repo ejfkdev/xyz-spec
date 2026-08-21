@@ -1,6 +1,6 @@
 # The xyz Specification
 
-**Version 0.1.0** · Status: Baseline · Last updated: 2026-08-21
+**Version 0.1.1** · Status: Baseline · Last updated: 2026-08-22
 
 This document is the normative contract for every xyz SDK. A library may call
 itself an *xyz SDK* only if it implements this specification. The key words
@@ -358,6 +358,24 @@ contract anyway.
 subcommand names for dispatch purposes but are not listed in the parent's
 help. Registering a path conflicted by an existing leaf or node, or an alias
 colliding with a sibling, MUST fail at registration.
+
+**Default subcommand.** A command MAY be marked as the *default child* of
+its parent node (Go: `CliHints{Default: true}`; Rust:
+`CliHints { default: true }`). When the first argument matches no
+registered segment *and* does not start with `-` (so `-h`, `-v`, `--json`
+and friends are never swallowed), the entire remaining argument list is
+forwarded, unconsumed, to the default child: `udf ./image.tar` is
+equivalent to `udf extract ./image.tar` when `extract` is the default.
+Semantics:
+
+- at most one default child per parent node; a second mark is a
+  registration error;
+- empty argument lists never trigger the default (the overview/help stays
+  at the unmatched node);
+- explicit paths, aliases, and post-descent `-h` behave exactly as if the
+  default command had been named;
+- the feature is CLI-only and applies at any tree level (nested nodes may
+  each declare their own default).
 
 **10.2. Flags.** Long flags use the wire name (`--name value`, `--name=value`);
 shorthands via `-x value`, `-xvalue`, `-x=value`; booleans take no argument

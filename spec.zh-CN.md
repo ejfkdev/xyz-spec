@@ -1,6 +1,6 @@
 # xyz 规范
 
-**Version 0.1.0** · Status: Baseline · Last updated: 2026-08-21
+**Version 0.1.1** · Status: Baseline · Last updated: 2026-08-22
 
 English: [spec.md](spec.md)；冲突时以英文为准
 
@@ -321,6 +321,18 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 **10.1. 命令树。** 带点的名称成为嵌套子命令。就派发而言，别名与子命令
 名等同，但不列入父级的 help。注册的路径与既有叶子或节点冲突，或别名与
 兄弟节点冲突，MUST 在注册期失败。
+
+**默认子命令。** 命令 MAY 被标记为其父节点的*默认子命令*（Go：
+`CliHints{Default: true}`；Rust：`CliHints { default: true }`）。当首段
+参数匹配不到任何已注册命令段、且不以 `-` 开头（从而 `-h`、`-v`、
+`--json` 等永远不被吞掉）时，整串剩余参数不消费地转发给默认子命令：
+`extract` 为默认时，`udf ./image.tar` 等价于 `udf extract ./image.tar`。
+语义：
+
+- 每个父节点至多一个默认子命令；第二个标记是注册期错误；
+- 空参数列表不触发默认（总览/帮助停留在未匹配节点）；
+- 显式路径、别名与下沉后的 `-h` 表现得与显式写出默认命令完全一致；
+- 该特性仅作用于 CLI，且适用于树的任意层级（嵌套节点可各自声明默认）。
 
 **10.2. Flags。** 长 flag 用线上名（`--name value`、`--name=value`）；短
 名经 `-x value`、`-xvalue`、`-x=value`；布尔不带参数，也可带显式的

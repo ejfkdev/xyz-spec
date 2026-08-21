@@ -1,6 +1,6 @@
 # xyz Conformance Programme
 
-Companion to [spec.md](spec.md) v0.1.0. An SDK claims conformance for a spec
+Companion to [spec.md](spec.md) v0.1.1. An SDK claims conformance for a spec
 version when:
 
 1. every **Class A** item below passes (itemised tests or equivalent
@@ -64,6 +64,10 @@ version when:
 ### CLI
 - [ ] A.22 Tree, aliases and conflicts per §10.1 (aliases dispatch but are
       not listed).
+- [ ] A.43 Default subcommand per §10.1: unmatched non-flag first
+      argument forwards the entire argument list to the marked command;
+      one default per parent (duplicate = registration error); empty
+      argument lists, flags, explicit paths and aliases unaffected.
 - [ ] A.23 Flag forms: `--name v`, `--name=v`, `-x v`, `-xv`, `-x=v`,
       boolean optional value, slice accumulation, `--` terminator (§10.2).
 - [ ] A.24 Positional prefix rule enforced at registration (§10.3).
@@ -259,6 +263,7 @@ implementations):
 | `user add -- -v` | `-v` is positional data: command output, not a version line |
 | `user add -- --json` | `--json` is positional data |
 | `--xyz.addr=:9` after `--` | not stripped from the argument list |
+| `udf ./image.tar` with `extract` marked `default` | forwarded unchanged to `extract` (positional `./image.tar` receives it); `udf extract ./image.tar` unchanged; `udf -h` shows root help |
 | validation `validate="gt=1.5"` with value 1.4 | fails with the rule; value 1.6 passes |
 | aligned table with a CJK header/cell | byte-identical across SDKs (widths in bytes, padding in characters) |
 | MCP `tools/call math.sum` | textContent is exactly `3` — no trailing newline |

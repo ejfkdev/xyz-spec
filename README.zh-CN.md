@@ -13,7 +13,7 @@ xyz 把一次命令定义变成三种接口——CLI、HTTP REST、MCP 工具服
 
 | 文档 | 内容 |
 |---|---|
-| [spec.md](spec.md) | **规范性契约**（v0.1.0）：定义词汇表、类型、默认值、校验、调用管线、错误分类学、渲染、三个前端、根派发器、嵌入面、体验约定、治理。RFC 2119 措辞。 |
+| [spec.md](spec.md) | **规范性契约**（v0.1.1）：定义词汇表、类型、默认值、校验、调用管线、错误分类学、渲染、三个前端、根派发器、嵌入面、体验约定、治理。RFC 2119 措辞。 |
 | [spec.zh-CN.md](spec.zh-CN.md) | spec.md 的中文镜像（英文为准） |
 | [conformance.md](conformance.md) | 一致性验收：A/B 两类检查单、11 命令展示程序与逐字节 golden 输出、必测的 feature 矩阵。 |
 | [deviations.md](deviations.md) | 差异登记表：各 SDK 与规范不符之处（语言必然 / SDK 缺失 / 扩展），每次规范发布时复审。 |
@@ -22,8 +22,8 @@ xyz 把一次命令定义变成三种接口——CLI、HTTP REST、MCP 工具服
 
 | SDK | 包 | 目标规范版本 | 备注 |
 |---|---|---|---|
-| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` v0.1.0 | v0.1.0（基线锚点） | Go 参考实现 |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.1.0 | v0.1.0（基线锚点） | Rust 参考实现 |
+| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go`（v0.2.2+） | v0.1.1（基线锚点） | Go 参考实现 |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.1.1 | v0.1.1（基线锚点） | Rust 参考实现 |
 
 两个锚点通过全部一致性验收；xyz-go 无差异登记，xyz-rust 在
 [deviations.md](deviations.md) 登记（Duration 符号、序列化后渲染、官方
