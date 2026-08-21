@@ -307,7 +307,8 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 
 **9.4.** 线上的字段顺序遵循声明顺序（参考实现保持声明顺序；map 同样按
 语言的序列化顺序渲染）。浮点显示采用语言数字格式化所能给出的最短表示
-（`2.5`、`3`）。
+（`2.5`、`3`）。对齐渲染以**字节计算列宽、以字符填充**（两个参考实现的
+混合语义——CJK 文本出现在表头或单元格时，表格仍需逐字节一致）。
 
 注（语言造成的分歧，登记于 deviations.md）：没有结构反射的语言在序列化
 后可能无法区分结构体值与 map 值；两者都渲染成键值对，而这本来就是可观
@@ -336,7 +337,8 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 渲染切换为 JSON；`--` 终止符（§10.2）同时终止 `-v`、`--version` 与
 `--json` 的识别——其后的 token 一律是位置数据，不再是开关；
 `completion bash|zsh|fish` 为二进制名生成可用的补全脚本；未知 shell 退出
-2。帮助布局
+2。补全词表必须包含顶层命令词、shell 词（`completion`、`help`、`-h`、
+`--help`、`-v`、`--version`）与模式词（语言允许时跟随配置）。帮助布局
 顺序：description → `Usage:` → 可选 `Aliases:` → `命令:`/`Flags:` →
 `Global Flags:` / 辅助行，内联提示 `(default …)`、`(env …)`、
 `(oneof a|b)` 织入 flag 描述。
@@ -370,7 +372,8 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 - `GET /openapi.json` → 由同一批 `inputSchema` 生成的 OpenAPI 3.0.3 文档；
   每个操作的 summary/parameters（path+query）/requestBody
   （POST/PUT/PATCH）/responses（200 携带输出 schema 内容，外加分类学中的
-  400/404/500 描述）。
+  400/404/500 描述）。`info.title`/`info.version` 参考实现固定为
+  `example service`/`1`，直到规范引入可配置的身份字段。
 
 **11.4. 中间件。** 服务的层级，从最外层开始，按此固定顺序：CORS →
 Bearer → Gzip → router。CORS：允许的 origin 列表（或 `*`）；OPTIONS 预检
@@ -474,7 +477,9 @@ debug/info/warn/error，默认 info，经代码或 `--xyz.log-level` 设置）�
 
 **13.7. 取消。** 派发器拥有一个信号上下文（SIGINT/SIGTERM），送达
 CLI/HTTP/MCP 处理器；HTTP 在退出前排空在途请求（参考宽限 5 s）；stdio
-MCP 把客户端断开视为正常退出 0。
+MCP 把客户端断开视为正常退出 0。HTTP 的*请求自身*取消（客户端断开）
+SHOULD 额外取消处理器上下文（Go 通过 `r.Context()` 做到；Rust 目前只
+传播 serve 级上下文——登记为 deviations.md 的 D-rust-11）。
 
 **13.8. 版本。** `-v` 的版本应答由库定义，可按语言的构建机制覆盖（Go：
 ldflags；Rust：`set_version`）。
