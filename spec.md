@@ -203,8 +203,11 @@ fail at registration.
   nil/None; nested struct zero iff all fields zero.
 - `omitempty` — zero value skips **all** rules of the field.
 - `min`/`max`/`len` — strings and slices compare length; numeric types
-  compare value; floats compare their truncated integer form.
-- `gt`/`gte`/`lt`/`lte` — numeric types only; anything else fails the rule.
+  compare value. All comparisons happen in exact float64 arithmetic
+  (integers up to 2^53 compare exactly; fractional thresholds such as
+  `gt=1.5` compare as written, never truncated).
+- `gt`/`gte`/`lt`/`lte` — numeric types only, float64 comparisons;
+  anything else fails the rule.
 - `oneof` — compares the value's display form against the listed forms.
 - `email` — strings only, matching `^[^@\s]+@[^@\s]+\.[^@\s]+$`-equivalent.
 
@@ -366,9 +369,11 @@ the expected and received counts (reference message:
 allowed, structure mandatory).
 
 **10.4. Built-ins.** `-h/--help` prints the help for the deepest matched node
-(parents list children); `-v/--version` anywhere on the line prints
-`<bin> version <version>` and exits 0; `--json` anywhere switches result
-rendering to JSON; `completion bash|zsh|fish` emits a working completion
+(parents list children); `-v/--version` prints `<bin> version <version>`
+and exits 0; `--json` switches result rendering to JSON; the `--` terminator
+(§10.2) stops `-v`, `--version` and `--json` recognition — tokens past it
+are positional data, never switches; `completion bash|zsh|fish` emits a
+working completion
 script for the binary name; unknown shells exit 2. Help layout order:
 description → `Usage:` → optional `Aliases:` → `命令:`/`Flags:` → `Global
 Flags:` / assistance lines, with inline hints `(default …)`, `(env …)`,
@@ -393,10 +398,12 @@ MUST be a registration error. Commands without HTTP hints are not routed.
 
 **11.2. Binding.** Validated order for building the argument map:
 interface defaults (base) → JSON body merge (methods other than GET/HEAD;
-read cap SHOULD be 1 MiB; unparseable body = 400
-`{"error":"invalid JSON body"}`) → per-field: path params (wire name),
-query values (default location; slice fields collect all repeats, others
-take the first), headers (name via §4.6), form fields (body + query). Fields
+read cap SHOULD be 1 MiB) → per-field: path params (wire name), query
+values (default location; slice fields collect all repeats, others take the
+first), headers (name via §4.6), form fields (request body only). A body
+that fails JSON parsing is a 400 strictly when the request *declares*
+`Content-Type: application/json`; an undeclared body simply does not merge.
+Fields
 excluded by §4.1 receive header values keyed by the language field name.
 
 **11.3. Built-in endpoints** (MUST exist on every HTTP frontend):
@@ -480,7 +487,8 @@ Resolution rules: empty config field keeps the default; words must be plain
 **13.2. Dispatch order** (fixed):
 
 1. empty registry → silent no-op, exit 0;
-2. `-v`/`--version` anywhere → `<bin> version <v>`, exit 0;
+2. `-v`/`--version` (before the `--` terminator) → `<bin> version <v>`,
+   exit 0;
 3. strip global `--xyz.*` built-ins (invalid values exit 2);
 4. empty args / `help` / `--help` / `-h` → overview (mode list + command
    table; the table is omitted when CLI is disabled);
@@ -488,7 +496,8 @@ Resolution rules: empty config field keeps the default; words must be plain
    mode.
 
 **13.3. Built-in parameters.** Global namespace `--xyz.*` consumed anywhere
-on the command line; inside `serve`/`mcp` mode the *mode word is the
+on the command line *before the `--` terminator* (tokens past `--` are
+positional and are never stripped); inside `serve`/`mcp` mode the *mode word is the
 namespace*, so bare names (`--addr`, `--bearer`, …) are equivalent. Renaming
 a mode word migrates its namespace. Precedence: mode-local flag > global
 flag / code config > library defaults. The table:

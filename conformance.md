@@ -98,7 +98,8 @@ version when:
 
 ### Dispatcher & platform
 - [ ] A.36 Dispatch order §13.2 in full: empty registry no-op; `-v`
-      anywhere; built-in stripping; overview; mode routing.
+      before the `--` terminator only; built-in stripping stops at `--`;
+      overview; mode routing.
 - [ ] A.37 Built-in parameter table §13.3 (both `--xyz.*` and mode-local
       bare names; precedence correct).
 - [ ] A.38 Capability switches: disabled mode warns and exits 1; shell
