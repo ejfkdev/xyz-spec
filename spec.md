@@ -1,6 +1,6 @@
 # The xyz Specification
 
-**Version 0.1.1** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.1.2** · Status: Baseline · Last updated: 2026-08-22
 
 This document is the normative contract for every xyz SDK. A library may call
 itself an *xyz SDK* only if it implements this specification. The key words
@@ -400,6 +400,16 @@ description → `Usage:` → optional `Aliases:` → `命令:`/`Flags:` → `Glo
 Flags:` / assistance lines, with inline hints `(default …)`, `(env …)`,
 `(oneof a|b)` woven into flag descriptions.
 
+**Custom help blocks.** A leaf command MAY carry two raw text blocks —
+`before` (inserted at the very top of its `-h` output, ahead of the
+description) and `after` (inserted at the very end, after `Global Flags`) —
+Go: `CliHints{Before, After}`; Rust: `CliHints { before, after }`. The
+blocks are emitted verbatim (multi-line and indentation as authored), with
+trailing newlines normalized to exactly one; an empty block MUST be a
+no-op (byte-identical output). Intermediate nodes have no hints and never
+print blocks. No named block kinds are prescribed — examples, version
+lines, repository URLs and anything else are the user's own text.
+
 **10.5. Exit codes.** Success 0. Command failures: the taxonomy's code
 (§8.2). Usage errors (unknown flag, missing argument, positional count):
 2. Registration errors reported at startup: 2. `validate`/decode failures are
@@ -515,6 +525,10 @@ Resolution rules: empty config field keeps the default; words must be plain
 3. strip global `--xyz.*` built-ins (invalid values exit 2);
 4. empty args / `help` / `--help` / `-h` → overview (mode list + command
    table; the table is omitted when CLI is disabled);
+   The overview MAY carry two raw config blocks — `help_before` at the top
+   and `help_after` at the bottom (printed even when the table is omitted;
+   same verbatim / newline-normalized / empty-no-op semantics as the `-h`
+   blocks).
 5. `serve` → HTTP mode; `mcp <transport>` → MCP mode; anything else → CLI
    mode.
 

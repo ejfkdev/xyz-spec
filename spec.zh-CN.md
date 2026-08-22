@@ -1,6 +1,6 @@
 # xyz 规范
 
-**Version 0.1.1** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.1.2** · Status: Baseline · Last updated: 2026-08-22
 
 English: [spec.md](spec.md)；冲突时以英文为准
 
@@ -355,6 +355,13 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 `Global Flags:` / 辅助行，内联提示 `(default …)`、`(env …)`、
 `(oneof a|b)` 织入 flag 描述。
 
+**自定义帮助块。** 叶子命令 MAY 携带两段原样文本块——`before`（插在 `-h`
+输出的最前、description 之前）与 `after`（插在最末、`Global Flags` 之后）
+——Go：`CliHints{Before, After}`；Rust：`CliHints { before, after }`。块
+按作者原样输出（多行与缩进自控），末尾多余换行归一为一个；空块 MUST 是
+零操作（字节级一致）。中间节点没有 hints，永不打印块。不规定任何命名块
+种类——示例、版本行、仓库地址等一切内容都是用户自己的文本。
+
 **10.5. 退出码。** 成功为 0。命令失败：分类学的码（§8.2）。使用错误（未
 知 flag、缺少参数、位置参数数量不符）：2。启动时报告的注册错误：2。
 `validate`/解码失败属于 `invalid_input` → 2。
@@ -453,7 +460,9 @@ MUST NOT 被包裹——发出警告注记是参考行为）。
 2. `--` 终止符之前的 `-v`/`--version` → `<bin> version <v>`，退出 0；
 3. 剥离全局 `--xyz.*` 内建参数（非法值退出 2）；
 4. 空参数 / `help` / `--help` / `-h` → 概览（模式列表 + 命令表；CLI 被禁
-   用时不显示命令表）；
+   用时不显示命令表）。概览 MAY 携带两段原样配置块——`help_before` 在最
+   前、`help_after` 在最后（命令表被省略时也打印；语义与 `-h` 块相同：
+   原样/换行归一/空块零操作）；
 5. `serve` → HTTP 模式；`mcp <transport>` → MCP 模式；其余 → CLI 模式。
 
 **13.3. 内建参数。** 全局命名空间 `--xyz.*` 可在命令行任意位置（`--`
