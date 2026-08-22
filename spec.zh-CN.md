@@ -156,6 +156,15 @@ SDK MUST 支持以下参数字段类型：
 命令内重复的短名是注册错误；标记 `required` 的位置参数 MUST 构成位置参
 数列表的前缀（必填位置参数出现在可选位置参数之后是注册错误）。
 
+**4.5a. 命令级通道开关。** 三个 hints 各自 MAY 携带排除位——Go：
+`CliHints{Skip}`、`HTTPHints{Skip}`、`MCPHints{Skip}`；Rust：
+`CliHints { skip }`、`HTTPHints { skip }`、`MCPHints { skip }`。语义：
+被标记的通道完全不消费该命令——CLI 不建子命令节点、别名不生效、不进
+completion 词（比 `hidden` 更强——hidden 只藏帮助、仍可执行）；HTTP 不注册
+路由、不出现在 `/openapi.json`；MCP 不成为工具。注册表与总览照常列出该命令
+（注册是全局的，消费是分通道的）。守护命令模式（「watch 阻塞到 ctx 取消」）
+= CLI 命令 + HTTP/MCP 双 skip——无需单独的模式标记。
+
 ### 4.6 HTTP 位置（`http:` 概念）
 
 `query`（未设置时的默认值）、`path`、`header`、`form`、`body` 之一。未知
@@ -201,8 +210,13 @@ go-playground/validator 兼容子集。规则语法：逗号分隔；数值规�
 **6.1.** 单个字段的优先级（以 CLI 为例：各前端的模式一致）：
 
 ```
-显式输入 > env 回退（仅 CLI）> 接口默认值 > 全局默认值 > 零值
+显式输入 > env 回退（仅 CLI）> 接口默认值 > 通道默认 > 全局默认值 > 零值
 ```
+
+*通道默认*这一层在 serve/mcp 启动时经 `--default key=value` 注入
+（可重复；逗号分隔对；亦即 Go `Config.ChannelDefaults` / Rust
+`Config.channel_defaults`），只补缺席键——绝不覆盖显式输入与接口默认。
+值走常规解码管线（数值通道默认按字段类型解析）。
 
 **6.2.** 每个前端在调用 `Invoke` *之前*，把各自接口专属的默认值注入参数
 map；随后 `Invoke` 对仍然缺失的键应用全局默认值。显式输入始终胜过这两
@@ -353,7 +367,9 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 `--help`、`-v`、`--version`）与模式词（语言允许时跟随配置）。帮助布局
 顺序：description → `Usage:` → 可选 `Aliases:` → `命令:`/`Flags:` →
 `Global Flags:` / 辅助行，内联提示 `(default …)`、`(env …)`、
-`(oneof a|b)` 织入 flag 描述。
+`(oneof a|b)` 织入 flag 描述。`-h` 里的 flag 类型标注 MUST 反映字段
+类型：`string`、`integer`、`number`、`bool`、`duration`、`time` 与
+`strings (repeatable)`（切片走重复 flag；逗号分隔**不**切分）。
 
 **自定义帮助块。** 叶子命令 MAY 携带两段原样文本块——`before`（插在 `-h`
 输出的最前、description 之前）与 `after`（插在最末、`Global Flags` 之后）
@@ -480,6 +496,7 @@ MUST NOT 被包裹——发出警告注记是参考行为）。
 | `--tls-cert/--tls-key` | cert 文件、key 文件 | 两者都设置 → TLS |
 | `--cors=a,b` 或 `*` | cors origins | CORS 允许列表 |
 | `--session-timeout=30m` | （仅 mcp） | streamable HTTP 的空闲会话过期时间 |
+| `--default k=v`（可重复） | 通道默认 | serve/mcp 启动默认，补缺失的请求/调用键（§6.1） |
 
 **13.4. 能力开关。** 运行时开关（no_cli / no_mcp / no_http）只禁用相应
 通道的运行时路径：模式词、`help`、`-v`、`completion` 继续工作；进入被禁
@@ -501,6 +518,14 @@ CLI/HTTP/MCP 处理器；HTTP 在退出前排空在途请求（参考宽限 5 s�
 MCP 把客户端断开视为正常退出 0。HTTP 的*请求自身*取消（客户端断开）
 SHOULD 额外取消处理器上下文（Go 通过 `r.Context()` 做到；Rust 目前只
 传播 serve 级上下文——登记为 deviations.md 的 D-rust-11）。
+
+**13.9. 可组合派发。** MUST 暴露可组合入口——Go：`TryRun(reg, args)
+(code int, handled bool)`（另有 `TryRunConfig`）；Rust：`try_run(reg,
+args) -> (i32, bool)`（另有 `try_run_config`）。语义：§13.2 的完整派发
+管线，唯 CLI 模式下首段未知（非命令段/别名、非 flag、无默认子命令）时
+返回 `(0, false)` 且**静默**（不打印任何内容）——宿主可围绕 xyz 路由
+自己的命令，无需第二套派发。其余（总览/版本/模式词/已知命令/CLI-skip
+段的未命中）与非可组合入口完全一致。
 
 **13.8. 版本。** `-v` 的版本应答由库定义，可按语言的构建机制覆盖（Go：
 ldflags；Rust：`set_version`）。

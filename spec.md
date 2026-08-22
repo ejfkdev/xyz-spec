@@ -179,6 +179,22 @@ shorthands within a command are a registration error; positionals marked
 `required` MUST form a prefix of the positional list (a required positional
 after an optional one is a registration error).
 
+**4.5a. Command-level channel switches.** Each of the three hint sets MAY
+carry an exclusion bit — Go: `CliHints{Skip}`, `HTTPHints{Skip}`,
+`MCPHints{Skip}`; Rust: `CliHints { skip }`, `HTTPHints { skip }`,
+`MCPHints { skip }`. Semantics: the marked channel does not consume the
+command at all —
+
+- CLI: no subcommand node, no aliases, no completion words (stronger than
+  `hidden`, which only hides help but stays executable);
+- HTTP: no route registration, absent from `/openapi.json`;
+- MCP: not a tool.
+
+The registry and overview keep listing the command (registration is
+global; consumption is per channel). The daemon pattern (§"watch" runs
+until its context is cancelled) is a CLI command with both HTTP and MCP
+skips — no separate mode flag is needed.
+
 ### 4.6 HTTP location (the `http:` concept)
 
 One of `query` (the default when unset), `path`, `header`, `form`, `body`.
@@ -227,8 +243,15 @@ error message MUST include the acceptable values.
 frontend):
 
 ```
-explicit input > env fallback (CLI only) > interface default > global default > zero value
+explicit input > env fallback (CLI only) > interface default > channel default > global default > zero value
 ```
+
+The *channel default* tier is injected at serve/mcp startup via
+`--default key=value` (repeatable; comma-pairs; also `Config.
+ChannelDefaults` in Go / `Config.channel_defaults` in Rust) and fills
+absent keys only — never overriding explicit input or interface defaults.
+Values run through the ordinary decode pipeline (a numeric channel default
+parses per the field type).
 
 **6.2.** Each frontend injects its own interface-specific defaults into the
 argument map *before* calling `Invoke`; `Invoke` then applies global
@@ -398,7 +421,10 @@ working completion
 script for the binary name; unknown shells exit 2. Help layout order:
 description → `Usage:` → optional `Aliases:` → `命令:`/`Flags:` → `Global
 Flags:` / assistance lines, with inline hints `(default …)`, `(env …)`,
-`(oneof a|b)` woven into flag descriptions.
+`(oneof a|b)` woven into flag descriptions. Flag type annotations in
+`-h` MUST reflect the field type: `string`, `integer`, `number`, `bool`,
+`duration`, `time`, and `strings (repeatable)` for slices (the CLI accepts
+repeated flags; comma-separated values are NOT split).
 
 **Custom help blocks.** A leaf command MAY carry two raw text blocks —
 `before` (inserted at the very top of its `-h` output, ahead of the
@@ -548,6 +574,7 @@ flag / code config > library defaults. The table:
 | `--tls-cert/--tls-key` | cert file, key file | both set → TLS |
 | `--cors=a,b` or `*` | cors origins | CORS allowlist |
 | `--session-timeout=30m` | (mcp only) | idle-session expiry for streamable HTTP |
+| `--default k=v` (repeatable) | channel defaults | serve/mcp startup defaults injecting missing request/call keys (§6.1) |
 
 **13.4. Capability switches.** Runtime switches (no_cli / no_mcp / no_http)
 disable a channel's runtime path only: mode words, `help`, `-v`, `completion`
@@ -575,6 +602,17 @@ disconnect as normal exit 0. In HTTP, the *request's own* cancellation
 (client disconnect) SHOULD additionally cancel the handler context (Go
 does via `r.Context()`; Rust currently propagates only the serve-level
 context — registered in deviations.md as D-rust-11).
+
+**13.9. Composable dispatch.** A composable entry MUST be exposed —
+Go: `TryRun(reg, args) (code int, handled bool)` (+`TryRunConfig`); Rust:
+`try_run(reg, args) -> (i32, bool)` (+`try_run_config`). Semantics: the
+full dispatch pipeline of §13.2, except that in CLI mode an unknown first
+argument (no command segment, no alias, not a flag, and no default
+subcommand) returns `(0, false)` **silently** — printing nothing — so a
+host program can route its own commands around xyz without a second
+dispatcher. Everything else (overview, version, mode words, known
+commands, CLI-skipped segments being misses) behaves exactly like the
+non-composable entry.
 
 **13.8. Version.** Version answer for `-v` is library-defined, overridable
 per language's build mechanism (Go: ldflags; Rust: `set_version`).

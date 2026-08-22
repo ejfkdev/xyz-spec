@@ -120,6 +120,21 @@ version when:
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact
       where marked).
+- [ ] A.46 Command-level channel switches per §4.5a: CLI/HTTP/MCP skip bits
+      remove the command from the marked channel only (no tree node / no
+      route / no tool); overview keeps listing; CLI skip also drops
+      aliases and completion words.
+- [ ] A.47 Channel defaults per §6.1/§13.3: `--default k=v` (repeatable,
+      comma-pairs, also `Config.ChannelDefaults`/`channel_defaults`) fills
+      absent request/call keys only; values flow through the decode
+      pipeline; invalid pairs are usage errors.
+- [ ] A.48 Composable dispatch per §13.9: TryRun/try_run returns
+      `(0, false)` silently for an unknown CLI top word (no command,
+      alias, flag or default subcommand); all other paths identical to the
+      main entry; CLI-skipped segments count as misses.
+- [ ] A.49 Help flag type fidelity per §10.4: `-h` renders `string`/
+      `integer`/`number`/`bool`/`duration`/`time`/`strings (repeatable)`
+      by field type.
 - [ ] A.45 Language (l10n) per §15.5: en + zh-CN bundled; identical canonical
       keys and English wording; --xyz.lang > Config > LANG/LC_ALL > en
       precedence; unknown values exit 2; per-language override table
