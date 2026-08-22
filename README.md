@@ -47,3 +47,5 @@ Rust MCP SDK, version injection).
 ## License
 
 [MIT](LICENSE)
+
+Release process: see [RELEASING.md](RELEASING.md) — every tag carries a full changelog (the annotated message *is* the release note).
