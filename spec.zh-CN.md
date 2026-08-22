@@ -162,8 +162,12 @@ SDK MUST 支持以下参数字段类型：
 被标记的通道完全不消费该命令——CLI 不建子命令节点、别名不生效、不进
 completion 词（比 `hidden` 更强——hidden 只藏帮助、仍可执行）；HTTP 不注册
 路由、不出现在 `/openapi.json`；MCP 不成为工具。注册表与总览照常列出该命令
-（注册是全局的，消费是分通道的）。守护命令模式（「watch 阻塞到 ctx 取消」）
-= CLI 命令 + HTTP/MCP 双 skip——无需单独的模式标记。
+（注册是全局的，消费是分通道的）。
+
+**守护命令。** 命令 MAY 标记 `Daemon`（Go：`CliHints{Daemon: true}`；Rust：
+`CliHints { daemon: true }`）声明长驻生命周期：handler 阻塞到上下文取消，
+届时 CLI 优雅退出 0。语义：标记隐含 CLI-only 消费（HTTP/MCP 视同 skip
+排除）、CLI 不渲染返回值、handler 的分类错误照常映射退出码。
 
 ### 4.6 HTTP 位置（`http:` 概念）
 
@@ -216,7 +220,10 @@ go-playground/validator 兼容子集。规则语法：逗号分隔；数值规�
 *通道默认*这一层在 serve/mcp 启动时经 `--default key=value` 注入
 （可重复；逗号分隔对；亦即 Go `Config.ChannelDefaults` / Rust
 `Config.channel_defaults`），只补缺席键——绝不覆盖显式输入与接口默认。
-值走常规解码管线（数值通道默认按字段类型解析）。
+值走常规解码管线（数值通道默认按字段类型解析）。在 serve 与 mcp 模式，
+任何未识别的 `--key value` / `--key=value` flag 同样透传为通道默认
+（`gs serve --index ./wiki` 即 `--default index=./wiki` 的顺手写法）；
+无值的悬空 `--key` 是用法错误。
 
 **6.2.** 每个前端在调用 `Invoke` *之前*，把各自接口专属的默认值注入参数
 map；随后 `Invoke` 对仍然缺失的键应用全局默认值。显式输入始终胜过这两

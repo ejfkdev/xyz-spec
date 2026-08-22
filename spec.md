@@ -191,9 +191,15 @@ command at all —
 - MCP: not a tool.
 
 The registry and overview keep listing the command (registration is
-global; consumption is per channel). The daemon pattern (§"watch" runs
-until its context is cancelled) is a CLI command with both HTTP and MCP
-skips — no separate mode flag is needed.
+global; consumption is per channel).
+
+**Daemon commands.** A command MAY be marked `Daemon` (Go:
+`CliHints{Daemon: true}`; Rust: `CliHints { daemon: true }`) declaring a
+long-running lifecycle: the handler blocks until its context is cancelled,
+at which point the CLI exits 0 gracefully. Semantics: the marker implies
+CLI-only consumption (HTTP/MCP excluded as if skipped), no result
+rendering on the CLI, and the handler's classified error still maps to the
+usual exit codes.
 
 ### 4.6 HTTP location (the `http:` concept)
 
@@ -251,7 +257,11 @@ The *channel default* tier is injected at serve/mcp startup via
 ChannelDefaults` in Go / `Config.channel_defaults` in Rust) and fills
 absent keys only — never overriding explicit input or interface defaults.
 Values run through the ordinary decode pipeline (a numeric channel default
-parses per the field type).
+parses per the field type). In serve and mcp modes, any unrecognised
+`--key value` / `--key=value` flag is ALSO transparently treated as a
+channel default (`gs serve --index ./wiki` is the ergonomic spelling of
+`--default index=./wiki`); a dangling `--key` without a value is a usage
+error.
 
 **6.2.** Each frontend injects its own interface-specific defaults into the
 argument map *before* calling `Invoke`; `Invoke` then applies global

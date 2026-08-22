@@ -132,6 +132,8 @@ version when:
       `(0, false)` silently for an unknown CLI top word (no command,
       alias, flag or default subcommand); all other paths identical to the
       main entry; CLI-skipped segments count as misses.
+- [ ] A.50 Daemon commands per §4.5a: the marker implies CLI-only
+      consumption, no result rendering, graceful exit 0 on ctx cancel.
 - [ ] A.49 Help flag type fidelity per §10.4: `-h` renders `string`/
       `integer`/`number`/`bool`/`duration`/`time`/`strings (repeatable)`
       by field type.
