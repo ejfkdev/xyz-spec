@@ -120,6 +120,10 @@ version when:
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact
       where marked).
+- [ ] A.45 Language (l10n) per §15.5: en + zh-CN bundled; identical canonical
+      keys and English wording; --xyz.lang > Config > LANG/LC_ALL > en
+      precedence; unknown values exit 2; per-language override table
+      applies; unknown keys never panic.
 - [ ] B.2 Core layers free of third-party dependencies beyond the
       language-standard JSON implementation (§15.3).
 - [ ] B.3 Nested decode depth guard (reference value 20) (§4.3).

@@ -1,6 +1,6 @@
 # xyz 规范
 
-**Version 0.1.2** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.2.0** · Status: Baseline · Last updated: 2026-08-22
 
 English: [spec.md](spec.md)；冲突时以英文为准
 
@@ -559,6 +559,47 @@ Rust 的 `xyz_rust::Registry` / `spec::command::Command` /
 及既可从代码也可从命令行注入配置。
 
 ---
+
+**15.4. 惯用入口。** 每种语言提供自己的构造方式（Go：流式
+`Define(...)...Run()` 链加 `Main/Run` 函数；Rust：`define(...)...run()`
+构建器加 `main`/`run`/`run_config`）——规范内容是这个*集合*：一行式
+main、返回退出码的可分派函数、逐命令注册、代码与命令行双重配置注入。
+
+**15.5. 语言（l10n）。** 所有内置界面文本的语言（总览、帮助标签、用法
+错误、派发警告、MCP 用法与诊断；§8 错误分类消息保持英文）按以下优先级
+选择：
+
+```
+--xyz.lang flag > Config 语言（Go: Config.Lang，Rust: Config.lang）> LANG/LC_ALL 检测（小写 zh 前缀 → zh-CN；C/POSIX/缺失 → en）> en
+```
+
+- 库 MUST 内建 **en**（规范默认）与 **zh-CN** 两种语言；未知的
+  `--xyz.lang` 值 MUST 在解析期报错（退出 2）。
+- 每条内置字符串是一个**消息键**。规范键名与英文文案是规范性的——各
+  SDK MUST 使用相同键名与英文措辞（golden 输出依赖此点）。传输词相关键
+  （`overview.mcp_mode`、`mcp.usage`、`mcp.err_unknown_transport`、
+  `mcp.err_sse_removed`）在本地官方 MCP SDK 传输集不同时可按 SDK 取值
+  （登记于 deviations.md）。
+- 用户内容（summary、description、帮助块）**永不**翻译。
+- 用户通过按语言的覆盖表配置多语言内容（Go `Config.Translations`、Rust
+  `Config.translations`：语言 → （键 → 文本））；覆盖优先于内置译文；
+  未知键回退键名本身且 MUST NOT panic。
+- 本版本（v0.2.0）的目录键集：
+
+```
+overview.usage_line   overview.cli_mode   overview.serve_mode   overview.mcp_mode
+overview.builtins     overview.commands   overview.disabled     overview.not_compiled
+help.usage            help.aliases        help.commands         help.flags
+help.global_flags     help.commands_placeholder   help.flags_placeholder
+help.json_flag        help.version_flag   help.help_flag
+cli.err_positional_count
+warn.mode_disabled    warn.no_cli         warn.bearer_stdio     stub.not_compiled
+log.serve_listening   log.graceful        log.mcp_listening     log.cors_on
+log.debug_dispatch
+mcp.usage             mcp.err_missing_transport   mcp.err_unknown_transport
+mcp.err_sse_removed   mcp.err_unknown_version      mcp.err_empty_version
+mcp.err_transport_versions   mcp.err_usage_extra_arg
+```
 
 ## 16. 一致性
 

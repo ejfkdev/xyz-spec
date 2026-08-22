@@ -108,6 +108,15 @@ carries serde + serde_json (and chrono for timestamps) as the
 zero-dependency. Spec wording already absorbs this; registered for
 provenance.
 
+### D-rust-11b · spec §15.5 (transport-word catalog keys)
+**Class:** language-forced → resolved-in-spec
+**Status:** resolved-in-spec
+**Detail:** The catalog keys listing the MCP transports
+(`overview.mcp_mode`, `mcp.usage`, `mcp.err_unknown_transport`,
+`mcp.err_sse_removed`) differ per SDK: Go lists `stdio|sse|http`, Rust
+`stdio|http` (its official SDK removed SSE). Spec §15.5 explicitly permits
+SDK-specific wording for these keys. Registered for provenance.
+
 ### D-rust-11 · spec §13.7 (per-request HTTP cancellation)
 **Class:** SDK limitation
 **Status:** open

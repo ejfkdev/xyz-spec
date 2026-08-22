@@ -1,6 +1,6 @@
 # The xyz Specification
 
-**Version 0.1.2** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.2.0** · Status: Baseline · Last updated: 2026-08-22
 
 This document is the normative contract for every xyz SDK. A library may call
 itself an *xyz SDK* only if it implements this specification. The key words
@@ -641,6 +641,53 @@ returning exit codes, per-command registration, and config injection both
 from code and from the command line.
 
 ---
+
+**15.4. Idiomatic entry points.** Each language offers its own constructor
+flavour (Go: fluent `Define(...)...Run()` chain plus `Main/Run` functions;
+Rust: `define(...)...run()` builder plus `main`/`run`/`run_config`) — the
+normative content is the *set*: one-line main, versioned dispatch functions
+returning exit codes, per-command registration, and config injection both
+from code and from the command line.
+
+**15.5. Language (l10n).** The interface language of all built-in text
+(overview, help labels, usage errors, dispatcher warnings, MCP usage and
+diagnostics; the error taxonomy messages §8 stay English) is selected in
+this precedence order:
+
+```
+--xyz.lang flag > Config language (Go: Config.Lang, Rust: Config.lang) > LANG/LC_ALL detection (lowercase zh-prefix → zh-CN; C/POSIX/absent → en) > en
+```
+
+- The library MUST bundle **en** (normative default) and **zh-CN** as
+  built-in languages; unknown `--xyz.lang` values MUST fail at parse time
+  (exit 2).
+- Every built-in string is a **message key**. The canonical keys and their
+  English texts are normative — SDKs MUST use identical keys and English
+  wording (the golden outputs require it). The transport-word keys
+  (`overview.mcp_mode`, `mcp.usage`, `mcp.err_unknown_transport`,
+  `mcp.err_sse_removed`) may differ per SDK where the local official MCP
+  SDK's transport set differs (registered in deviations.md).
+- User content (summaries, descriptions, help blocks) is NEVER translated.
+- Users configure multi-language content through a per-language override
+  table (`Config.Translations` in Go, `Config.translations` in Rust:
+  language → (key → text)); overrides win over built-in texts; unknown
+  keys fall back to the key itself and MUST NOT panic.
+- The catalog key set of this version (v0.2.0):
+
+```
+overview.usage_line   overview.cli_mode   overview.serve_mode   overview.mcp_mode
+overview.builtins     overview.commands   overview.disabled     overview.not_compiled
+help.usage            help.aliases        help.commands         help.flags
+help.global_flags     help.commands_placeholder   help.flags_placeholder
+help.json_flag        help.version_flag   help.help_flag
+cli.err_positional_count
+warn.mode_disabled    warn.no_cli         warn.bearer_stdio     stub.not_compiled
+log.serve_listening   log.graceful        log.mcp_listening     log.cors_on
+log.debug_dispatch
+mcp.usage             mcp.err_missing_transport   mcp.err_unknown_transport
+mcp.err_sse_removed   mcp.err_unknown_version      mcp.err_empty_version
+mcp.err_transport_versions   mcp.err_usage_extra_arg
+```
 
 ## 16. Conformance
 
