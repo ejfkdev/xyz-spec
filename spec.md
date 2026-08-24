@@ -82,8 +82,9 @@ alphanumeric or one of `. _ -`). This is MCP tool-name compatible and also
 bounds CLI subcommand segments.
 
 **3.2.** A dot (`.`) separates CLI subcommand levels: `user.add` names the
-subcommand path `user add`. Dots do not affect HTTP or MCP (the full name is
-the tool name / not used for routing).
+subcommand path `user add`. Dots do not affect HTTP or MCP routing: by
+default the full name is the MCP tool name; it MAY be overridden per
+command (§12.4a).
 
 **3.3.** Summary is a one-line description. Description is the longer text.
 MCP tool description is `summary` alone when `description` is empty,
@@ -523,9 +524,21 @@ never silently degrade. Where an SDK does offer SSE (the Go SDK),
 restrict `Host` to loopback unless configured wider (the Rust SDK does this
 to prevent DNS rebinding).
 
-**12.4. Tools.** One tool per registered command: name from §3, description
-per §3.3, `inputSchema` from the pipeline schema (§9), `outputSchema` from
-the result type when statically schematisable (absent otherwise).
+**12.4. Tools.** One tool per registered command: name per §12.4a,
+description per §3.3, `inputSchema` from the pipeline schema (§9),
+`outputSchema` from the result type when statically schematisable (absent
+otherwise). Annotations map from the `MCPHints` annotation strings: `read` →
+readOnlyHint true; `write` → readOnlyHint false; `destructive` →
+destructiveHint true; `idempotent` → idempotentHint true; `openworld` →
+openWorldHint true; `title:…` → title.
+
+**12.4a. Tool-name override.** A command MAY pin its MCP tool name via
+`MCPHints{name}` (Go: `MCPHints.Name`; Rust: pending, see deviations). When
+set, the override is the only name advertised in `tools/list` and accepted
+by `tools/call` — the dotted entry name stops being an MCP tool name but
+remains untouched for the CLI and HTTP channels, so each channel can carry
+its own naming. When empty (the default), the full §3.2 name applies. The
+override obeys the §3.1 grammar.
 Annotations map from the `MCPHints` annotation strings: `read` →
 readOnlyHint true; `write` → readOnlyHint false; `destructive` →
 destructiveHint true; `idempotent` → idempotentHint true; `openworld` →

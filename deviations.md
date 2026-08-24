@@ -26,6 +26,15 @@ where ambiguous, GO behaviour is normative.
 
 ## xyz-rust 0.1.0
 
+### D-rust-12 · spec §12.4a (MCP tool-name override)
+**Class:** SDK limitation
+**Status:** open
+**Detail:** Go v0.3.3 added `MCPHints.Name`; the Rust port has not carried
+the override yet (its `MCPHints` struct lacks the field, tools expose the
+dotted name only). Registered for provenance when §12.4a landed in spec
+v0.3.2; Rust implementation planned in a follow-up release aligned with the
+spec anchor.
+
 ### D-rust-01 · spec §4.3 (Duration)
 **Class:** language-forced
 **Status:** open

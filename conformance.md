@@ -17,7 +17,8 @@ version when:
 
 ### Identity & registration
 - [ ] A.1 Command names enforced per spec §3.1 (grammar + 128-char cap).
-- [ ] A.2 Dot separates CLI levels; full name is the MCP tool name (§3.2).
+- [ ] A.2 Dot separates CLI levels; full name is the MCP tool name by
+      default; per-command override via MCPHints{name} (§3.2/§12.4a).
 - [ ] A.3 Summary/description merge rule for MCP tool descriptions (§3.3).
 - [ ] A.4 Reserved top-level mode words rejected at registration (§3.4).
 - [ ] A.5 Duplicate names fail with a conflict-telling error (§3.5).
@@ -99,6 +100,9 @@ version when:
       message (§12.5).
 - [ ] A.35 MCP defaults fill absent keys only; identity defaults
       (binary basename / `0.0.0`) (§12.5/§12.6).
+- [ ] A.51 MCP tool-name override (§12.4a): only the override is advertised
+      in tools/list and accepted by tools/call; CLI/HTTP keep the dotted
+      name; §3.1 grammar enforced on the override.
 
 ### Dispatcher & platform
 - [ ] A.36 Dispatch order §13.2 in full: empty registry no-op; `-v`

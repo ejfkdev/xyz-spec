@@ -73,7 +73,8 @@ HTTP REST 服务与 MCP 工具服务器。熟悉一种语言里 xyz 的用户，
 名兼容，同时也界定了 CLI 子命令段。
 
 **3.2.** 点（`.`）分隔 CLI 子命令层级：`user.add` 命名子命令路径
-`user add`。点不影响 HTTP 或 MCP（完整名即工具名 / 不用于路由）。
+`user add`。点不影响 HTTP 或 MCP 路由：默认完整名即 MCP 工具名；可按命令
+覆写（§12.4a）。
 
 **3.3.** summary 是一行式描述。description 是较长的文本。MCP 工具描述在
 `description` 为空时仅用 `summary`，在 `summary` 为空时仅用
@@ -452,12 +453,18 @@ HTTP）。传输可用性跟随本地官方 SDK：当某传输在那里不存在
 无状态模式。Streamable HTTP 默认 SHOULD 把 `Host` 限制在 loopback，除非
 显式放宽配置（Rust SDK 即如此，以防 DNS rebinding）。
 
-**12.4. 工具。** 每条注册命令一个工具：名称见 §3，描述依 §3.3，
+**12.4. 工具。** 每条注册命令一个工具：名称依 §12.4a，描述依 §3.3，
 `inputSchema` 来自管线 schema（§9），`outputSchema` 来自可静态模式化的结
 果类型（否则缺省）。注解由 `MCPHints` 注解字符串映射而来：`read` →
 readOnlyHint true；`write` → readOnlyHint false；`destructive` →
 destructiveHint true；`idempotent` → idempotentHint true；`openworld` →
 openWorldHint true；`title:…` → title。
+
+**12.4a. 工具名覆写。** 命令 MAY 通过 `MCPHints{name}`（Go：
+`MCPHints.Name`；Rust：待移植，见 deviations）为其 MCP 工具名钉名。设置
+后，覆写名是 `tools/list` 里唯一对外通告、`tools/call` 唯一接受的名字——
+点分原名不再作为 MCP 工具名，但 CLI 与 HTTP 通道保持不变，各通道可携带
+各自的命名。为空（默认）时按 §3.2 用完整名。覆写名须满足 §3.1 文法。
 
 **12.5. 调用结果。** 成功返回双重内容——由 *CLI 渲染器*渲染的
 `textContent`（§9.1，修剪末尾换行）**以及**作为裸 JSON 值的
