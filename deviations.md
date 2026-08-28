@@ -163,3 +163,10 @@ serialisation convention. Spec §4.1 mentions the fallback; a future spec
 release should decide whether the fallback is normative across languages
 with established serialisation attributes (e.g. Java's Jackson
 annotations).
+### D-rust-13 · spec §4.7 (CLI union degradation)
+**Class:** SDK limitation
+**Status:** resolved-in-spec
+**Detail:** xyz-rust v0.4.1 shipped union fields as a CLI registration
+error; v0.4.2 degrades them to skipped fields (command stays usable).
+Spec v0.4.1's §4.7 tail now permits per-frontend skipping explicitly,
+recording the behavior as conformant rather than divergent. Closed.

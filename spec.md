@@ -219,8 +219,12 @@ permitted value (JSON-Schema `const`), so clients can branch on it.
 Untagged or internally-tagged enums MUST be rejected at definition time —
 their wire shape is ambiguous and cannot round-trip. A value decodes when
 exactly one branch matches; zero or multiple matches are `invalid_input`.
-The discriminator key is an ordinary argument choice on all three
-frontends (CLI flag, HTTP field, MCP argument).
+The discriminator key is an ordinary argument choice on all three frontends
+(CLI flag, HTTP field, MCP argument). A frontend that cannot natively
+express a union argument MAY skip that field in its channel (the command
+stays registered and usable through its remaining fields) rather than fail
+registration; the skipped field behaves as absent when optional
+(`Option<…>`) and as required when annotated required.
 
 ---
 

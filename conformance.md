@@ -39,7 +39,9 @@ version when:
       negative→unsigned all error (§4.4).
 - [ ] A.52 Tagged unions §4.7: adjacently-tagged enums become oneOf schemas
       with const discriminators; untagged/internally-tagged rejected at
-      definition; exactly-one-branch decode, else invalid_input.
+      definition; exactly-one-branch decode, else invalid_input; skippable
+      per frontend (command stays registered), absent unions error as no
+      absent form unless optional.
 
 ### Validation & defaults
 - [ ] A.12 Exact §5.1 rule set; unsupported rules fail at registration.
