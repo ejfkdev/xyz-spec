@@ -19,17 +19,27 @@ Detail: …
 
 ---
 
-## xyz-go v0.3.3 (baseline)
+## xyz-go v0.4.0 (baseline)
 
-Prior baseline (v0.1.0) held no deviations. Spec v0.4.0 added two
-capabilities implemented Rust-first; xyz-go is behind on both:
+Prior baselines held no deviations. xyz-go v0.4.0 implements spec v0.4.0
+except for one open deviation:
 
 - **D-go-01 · spec §4.7 (tagged unions / oneOf):** Class SDK limitation,
-  open. Go has no enum argument support yet; added when the Rust
-  implementation settles the semantics into the conformance fixtures.
+  open. Go has no language-native enum-argument support; the semantics are
+  now settled by the xyz-rust v0.4.0 implementation and conformance A.52,
+  so a Go implementation is planned against that fixture. Until then Go
+  rejects tagged-union types at definition time by construction (there is
+  no type to express them).
+
+Resolved in v0.4.0 (entry superseded, kept for provenance):
+
 - **D-go-02 · spec §12.7 (content-block results):** Class SDK limitation,
-  open. Go's frontends still project every result through the plain JSON
-  path; the block envelope projection is implemented in xyz-rust first.
+  Resolved by implementation in xyz-go v0.4.0: a reserved-envelope detector
+  (`block` package), CLI projection (inline text + temp-file paths for
+  binary blocks), MCP `Content` verbatim + envelope `structuredContent`,
+  and HTTP pass-through of the envelope body. Covered by
+  `TestCLIBlockProjection`, `TestMCPBlockResult`,
+  `TestHTTPBlockEnvelopePassThrough` and `block.TestDetect*`.
 
 ## xyz-rust 0.1.0
 
