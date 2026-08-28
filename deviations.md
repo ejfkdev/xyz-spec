@@ -31,6 +31,19 @@ except for one open deviation:
   rejects tagged-union types at definition time by construction (there is
   no type to express them).
 
+Open in v0.4.1 (extension, kept for provenance):
+
+- **D-go-03 · spec §10.6 (output contract, extension):** Class extension,
+  open. Per-channel output functions on `CliHints/HTTPHints/MCPHints`
+  (`Output` fields) let an SDK adopt entirely channel-specific result
+  renderings (rich CLI text/color, full HTTP response control, custom MCP
+  textContent) while machine modes (`--json`, structuredContent) keep their
+  normative behaviour. Precedence is pinned by the SDK as machine mode >
+  Output > §12.7 envelope > default rendering; error paths never pass
+  through Output. Registered as an extension: spec §10.6 still governs the
+  default projections, and a future spec revision may absorb a
+  cross-language clause once both SDKs agree on the surface.
+
 Resolved in v0.4.0 (entry superseded, kept for provenance):
 
 - **D-go-02 · spec §12.7 (content-block results):** Class SDK limitation,
