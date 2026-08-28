@@ -208,6 +208,20 @@ One of `query` (the default when unset), `path`, `header`, `form`, `body`.
 Unknown locations are a registration error. `http_name` overrides the wire
 name; precedence is http_name > wire name > language field name.
 
+### 4.7 Tagged unions (`oneOf`)
+
+An SDK MAY accept enum argument fields as **adjacently-tagged unions**: an
+enum whose serialization carries an explicit discriminator key (serde's
+`#[serde(tag = "…")]` shape, or a language-native equivalent) maps to an
+`inputSchema` `oneOf` over its variant schemas. Each variant branch MUST
+inject the discriminator property with the variant name fixed as the only
+permitted value (JSON-Schema `const`), so clients can branch on it.
+Untagged or internally-tagged enums MUST be rejected at definition time —
+their wire shape is ambiguous and cannot round-trip. A value decodes when
+exactly one branch matches; zero or multiple matches are `invalid_input`.
+The discriminator key is an ordinary argument choice on all three
+frontends (CLI flag, HTTP field, MCP argument).
+
 ---
 
 ## 5. Validation
@@ -555,6 +569,28 @@ by the *CLI renderer* (§9.1, trailing newline trimmed) **and**
 `0.0.0`. Bearer/CORS configuration applies to the http transport (stdio is
 local and MUST NOT be wrapped — emitting a warning note is the reference
 behaviour).
+
+**12.7. Content-block results.** A command MAY return structured content
+blocks (text / image / audio / resource) instead of a plain value. Blocks
+travel as MCP `Content` verbatim; `structuredContent`, when present, holds
+the JSON rendering (§12.5's dual-content shape). The JSON rendering of a
+block result is the **reserved block envelope**: an object whose only key is
+`content`, an array of `{"type": "text", "text": …}` or
+`{"type": "image", "mimeType": …, "data": …}` entries — binary payloads are
+base64 strings, never bare bytes. The three frontends project it:
+
+- **CLI**: text blocks print inline; binary blocks are written to files in
+  the system temp directory and their paths are printed in place — large
+  payloads stay out of the terminal;
+- **HTTP**: the envelope is the response body as-is (self-describing JSON,
+  base64 inline);
+- **MCP**: `Content` carries the blocks verbatim and `structuredContent`
+  the envelope, so text-first clients and structured consumers both work.
+
+An SDK that renders an object whose sole key is `content` with entries of
+exactly those shapes MUST treat it as the block envelope; the reserved
+shape is how the block result survives type-erasure between the handler and
+the frontends.
 
 ---
 

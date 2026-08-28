@@ -19,10 +19,17 @@ Detail: …
 
 ---
 
-## xyz-go v0.1.0 (baseline)
+## xyz-go v0.3.3 (baseline)
 
-No deviations. xyz-go is one of the two anchors the spec was written from;
-where ambiguous, GO behaviour is normative.
+Prior baseline (v0.1.0) held no deviations. Spec v0.4.0 added two
+capabilities implemented Rust-first; xyz-go is behind on both:
+
+- **D-go-01 · spec §4.7 (tagged unions / oneOf):** Class SDK limitation,
+  open. Go has no enum argument support yet; added when the Rust
+  implementation settles the semantics into the conformance fixtures.
+- **D-go-02 · spec §12.7 (content-block results):** Class SDK limitation,
+  open. Go's frontends still project every result through the plain JSON
+  path; the block envelope projection is implemented in xyz-rust first.
 
 ## xyz-rust 0.1.0
 

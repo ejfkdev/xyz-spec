@@ -176,6 +176,16 @@ completion 词（比 `hidden` 更强——hidden 只藏帮助、仍可执行）�
 位置是注册错误。`http_name` 覆盖线上名；优先级为 http_name > 线上名 >
 语言字段名。
 
+### 4.7 带标签联合（`oneOf`）
+
+SDK MAY 把枚举类型的参数字段当作**邻接带标签联合**接受：序列化携带显式
+判别键的枚举（serde 的 `#[serde(tag = "…")]` 形态，或语言原生等价物）映射
+为各变体 schema 的 `inputSchema` `oneOf`。每个变体分支 MUST 注入判别属性，
+并把变体名固化为唯一允许值（JSON-Schema `const`），客户端据以分派。无标签
+或内部标签的枚举 MUST 在定义期拒绝——线上形态有歧义、无法往返。一个值在
+**恰好一个**分支匹配时解码成功；零个或多个匹配都是 `invalid_input`。判别键
+在三个前端都是一等参数选择（CLI flag、HTTP 字段、MCP 参数）。
+
 ---
 
 ## 5. 校验
@@ -474,6 +484,23 @@ openWorldHint true；`title:…` → title。
 **12.6. 服务器身份。** 名称默认为二进制的 basename（不含路径的文件名）；
 版本默认为 `0.0.0`。Bearer/CORS 配置适用于 http 传输（stdio 是本地通道，
 MUST NOT 被包裹——发出警告注记是参考行为）。
+
+**12.7. 内容块结果。** 命令 MAY 返回结构化内容块（text / image / audio /
+resource）以替代纯值。块以 MCP `Content` 原样传递；`structuredContent` 若
+存在则持有 JSON 呈现（§12.5 的双内容形态）。块结果的 JSON 呈现是
+**保留块信封**：仅含 `content` 一个键的对象，其数组项形如
+`{"type": "text", "text": …}` 或
+`{"type": "image", "mimeType": …, "data": …}`——二进制载荷是 base64 字符串，
+绝不裸字节。三个前端就此投影：
+
+- **CLI**：文本块内联输出；二进制块写入系统临时目录的文件，以文件路径替
+  代内容输出——大载荷不进终端；
+- **HTTP**：信封即响应体（自描述 JSON，base64 内联）；
+- **MCP**：`Content` 原样携带块，`structuredContent` 持有信封——面向文本的
+  客户端与结构化消费者同时可用。
+
+SDK 渲染"唯一键为 `content` 且各项恰好符合上述形状"的对象时 MUST 按块信封
+处理；保留形状正是块结果在 handler 与前端之间的类型擦除中存续的方式。
 
 ---
 

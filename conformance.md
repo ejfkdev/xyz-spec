@@ -37,6 +37,9 @@ version when:
       fail at registration or earlier (§4.3).
 - [ ] A.11 Lossless numeric conversion: non-integral→int, width overflow,
       negative→unsigned all error (§4.4).
+- [ ] A.52 Tagged unions §4.7: adjacently-tagged enums become oneOf schemas
+      with const discriminators; untagged/internally-tagged rejected at
+      definition; exactly-one-branch decode, else invalid_input.
 
 ### Validation & defaults
 - [ ] A.12 Exact §5.1 rule set; unsupported rules fail at registration.
@@ -103,6 +106,9 @@ version when:
 - [ ] A.51 MCP tool-name override (§12.4a): only the override is advertised
       in tools/list and accepted by tools/call; CLI/HTTP keep the dotted
       name; §3.1 grammar enforced on the override.
+- [ ] A.53 Content-block results (§12.7): block envelope projected as MCP
+      Content verbatim, CLI inline text + temp-file paths for binary
+      blocks, HTTP envelope body with base64 payloads.
 
 ### Dispatcher & platform
 - [ ] A.36 Dispatch order §13.2 in full: empty registry no-op; `-v`
