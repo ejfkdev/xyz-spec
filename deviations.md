@@ -29,7 +29,10 @@ except for one open deviation:
   now settled by the xyz-rust v0.4.0 implementation and conformance A.52,
   so a Go implementation is planned against that fixture. Until then Go
   rejects tagged-union types at definition time by construction (there is
-  no type to express them).
+  no type to express them). §17.3 review at spec v0.4.1: the §4.7 tail
+  (per-frontend skip policy) is a MAY and imposes no new obligation on a
+  union-less SDK — entry remains open until Go grows a union argument
+  surface.
 
 Open in v0.4.1 (extension, kept for provenance):
 

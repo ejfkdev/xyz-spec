@@ -23,8 +23,8 @@ beyond.
 
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
-| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.0+) | v0.4.0 (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.1 | v0.4.0 (baseline anchor) | Rust reference implementation |
+| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.1+) | v0.4.1 (baseline anchor) | Go reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.2 | v0.4.1 (baseline anchor) | Rust reference implementation |
 
 Both anchors pass the full conformance programme; xyz-go files no
 deviations, xyz-rust files [deviations.md](deviations.md) (duration sign,
