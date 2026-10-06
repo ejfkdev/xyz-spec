@@ -79,12 +79,10 @@ Closed by implementation in v0.4.0 (kept for provenance):
 
 ### D-rust-12 · spec §12.4a (MCP tool-name override)
 **Class:** SDK limitation
-**Status:** open
-**Detail:** Go v0.3.3 added `MCPHints.Name`; the Rust port has not carried
-the override yet (its `MCPHints` struct lacks the field, tools expose the
-dotted name only). Registered for provenance when §12.4a landed in spec
-v0.3.2; Rust implementation planned in a follow-up release aligned with the
-spec anchor.
+**Status:** closed-by-implementation
+**Detail:** Go v0.3.3 added `MCPHints.Name`; Rust carried it in xyz-rust
+v0.4.3 (`MCPHints.name`, grammar-checked at registration — override-only
+advertisement and call routing, locked by `mcp::mcp_test::mcp_name_override`).
 
 ### D-rust-01 · spec §4.3 (Duration)
 **Class:** language-forced

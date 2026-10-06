@@ -33,17 +33,17 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.2 | v0.4.2 ✅ | pending (rust 0.4.2 → spec v0.4.1) |
-| v0.4.1 | v0.4.1 | 0.4.2 ✅ |
+| v0.4.2 | v0.4.2 ✅ | 0.4.3 ✅ |
+| v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
 The v0.4.2 surface — rich errors (§8.5/§8.6), CLI `--format` with the
 full-name/conflict rule (§10.7), HTTP application-identity + SDK-version
 headers (§11.6) and MCP result `_meta` (§12.8) — is shipped by xyz-go
-v0.4.2; xyz-rust catches up in a follow-up release. Until then the clauses
-that are MAY (output functions §9.5, headers §11.6, `_meta` §12.8, rich-error
-layers §8.5) impose no obligation on xyz-rust 0.4.2, which remains conformant
-against v0.4.1. Full history: see the git tags of each repository.
+v0.4.2 and xyz-rust v0.4.3. The one MAY clause both leave to per-SDK
+choice is §9.5 per-channel output functions (neither ships them; commands
+without output functions render identically everywhere, so conformance
+holds). Full history: see the git tags of each repository.
 
 xyz-go files one open deviation (D-go-01, tagged unions); xyz-rust files
 [deviations.md](deviations.md) (duration sign, rendering via serialised
