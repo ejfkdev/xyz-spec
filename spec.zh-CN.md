@@ -429,12 +429,15 @@ CLI 函数全权负责人类可读渲染（富文本、彩色、分页）；HTTP
 许本地化，结构必须一致）。
 
 **10.4. 内建。** `-h/--help` 打印最深匹配节点的帮助（父级列出子级）；
-`-v/--version` 打印 `<bin> version <version>` 并退出 0；`--json` 把结果
-渲染切换为 JSON；`--` 终止符（§10.2）同时终止 `-v`、`--version` 与
+`-v/--version` 打印 `<app-name> version <app-version>` 并退出 0；`--json`
+把结果渲染切换为 JSON；`--` 终止符（§10.2）同时终止 `-v`、`--version` 与
 `--json` 的识别——其后的 token 一律是位置数据，不再是开关；
 `completion bash|zsh|fish` 为二进制名生成可用的补全脚本；未知 shell 退出
-2。补全词表必须包含顶层命令词、shell 词（`completion`、`help`、`-h`、
-`--help`、`-v`、`--version`）与模式词（语言允许时跟随配置）。帮助布局
+2。`help` 模式还可带参数——`help <命令路径>` 打印该命令的详细帮助（与
+`<路径> -h` 相同）、`help <模式>` 打印该模式的帮助——且每个服务模式对
+`-h`/`--help` 以自身帮助应答而不起服务（派发见 §13.2）。补全词表必须包含
+顶层命令词、shell 词（`completion`、`help`、`-h`、`--help`、`-v`、
+`--version`）与模式词（语言允许时跟随配置）。帮助布局
 顺序：description → `Usage:` → 可选 `Aliases:` → `命令:`/`Flags:` →
 `Global Flags:` / 辅助行，内联提示 `(default …)`、`(env …)`、
 `(oneof a|b)` 织入 flag 描述。`-h` 里的 flag 类型标注 MUST 反映字段
@@ -580,6 +583,17 @@ Bearer → Gzip → router。CORS：允许的 origin 列表（或 `*`）；OPTIO
 参考 Go 实现以 net/http 的规范大小写 `X-App-Version` / `X-Xyz-Version`
 发出。）
 
+**11.7. 逐请求语言（Accept-Language）。** HTTP 前端逐请求从
+`Accept-Language` 头解析语言：q 值最高的受支持标签胜出（`zh*` → zh-CN、
+`en*` → en）；头缺席或不含受支持标签时回退到进程默认语言（§15.5）。解析出
+的语言携带在请求 context 中，于是 (a) 框架生成的响应消息（如非法 JSON 体的
+400、§8.6 错误体里的框架文本）以该语言发出，(b) handler 可读取它并本地化
+自己的输出。公开访问器暴露它（Go：`xyz.LanguageFromCtx(ctx)`；底层携带为
+`langx.WithLang`/`FromCtx`）。这是逐请求的、独立于进程级 CLI 语言；CLI 与
+MCP 通道用进程语言（§15.5）。参考注记：深层管线消息（解码/类型转换）在尚未
+编目处 MAY 保持英文；但请求语言已在 context 中可供 handler 使用、并供逐步
+本地化。
+
 ---
 
 ## 12. MCP 前端
@@ -671,21 +685,39 @@ initialize 结果的 MCP `serverInfo`（§12.6）——`serverInfo.name` = 应�
 
 ## 13. 根派发器
 
-**13.1. 模式词。** 默认模式词：`serve`（HTTP）、`mcp`、`help`。它们是保
-留的顶层名称（§3.4），可经配置改名，并为所有库消息原样使用（除此之外
-任何地方都不得硬编码这些词）。解析规则：配置字段为空则保留默认值；词必
-须朴素（无前导短横、无空白）且两两互异；违反则退出 2。
+**13.1. 模式词。** 默认模式词：`serve`（HTTP REST + `/openapi.json` +
+`/mcp` 端点）、`http`（仅 HTTP REST + `/openapi.json`——单独的 HTTP 接口，
+不挂 `/mcp`）、`mcp`、`help`。它们可经配置改名，并为所有库消息原样使用
+（除此之外任何地方都不得硬编码这些词）。解析规则：配置字段为空则保留默认
+值；词必须朴素（无前导短横、无空白）且两两互异；违反则退出 2。
+
+**命名空间形态与遮蔽。** 每个模式词 `W` 还有一个始终可用的命名空间形态
+`xyz.W`（与 `--xyz.*` 参数命名空间一致），它*永不*显示在帮助里。顶层段等于
+`W` 的用户命令会*遮蔽*裸词：此时 `W` 路由到用户命令，内建模式仅经 `xyz.W`
+可达。遮蔽取代了旧的硬保留——注册名为如 `serve.*` 的命令不再是错误
+（§3.4）。概览只在未遮蔽时列出某模式的裸词；被遮蔽的模式被省略（用户命令
+改出现在命令表里），其 `xyz.W` 形态保持隐藏。CLI-Skip 的命令不参与遮蔽。
 
 **13.2. 派发顺序**（固定）：
 
 1. 空注册表 → 静默无操作，退出 0；
-2. `--` 终止符之前的 `-v`/`--version` → `<bin> version <v>`，退出 0；
+2. `--` 终止符之前的 `-v`/`--version` → `<app-name> version <app-version>`，
+   退出 0；
 3. 剥离全局 `--xyz.*` 内建参数（非法值退出 2）；
-4. 空参数 / `help` / `--help` / `-h` → 概览（模式列表 + 命令表；CLI 被禁
-   用时不显示命令表）。概览 MAY 携带两段原样配置块——`help_before` 在最
-   前、`help_after` 在最后（命令表被省略时也打印；语义与 `-h` 块相同：
-   原样/换行归一/空块零操作）；
-5. `serve` → HTTP 模式；`mcp <transport>` → MCP 模式；其余 → CLI 模式。
+4. 空参数 / 根级 `--help` / `-h` → 概览（模式列表 + 命令表；CLI 被禁用时
+   不显示命令表）。概览 MAY 携带两段原样配置块——`help_before` 在最前、
+   `help_after` 在最后（命令表被省略时也打印；语义与 `-h` 块相同：原样/
+   换行归一/空块零操作）；
+5. 首 token 的模式匹配：`xyz.W` 恒选中内建模式；裸 `W` 仅在未遮蔽时选中
+   （§13.1）。随后：
+   - `help` 模式 → 无参数的 `help` 打印概览；`help <模式>` 打印该模式的
+     帮助；`help <命令路径>`（点分 `user.add` 或空格 `user add`）打印该命令
+     的详细帮助（与 `<命令路径> -h` 相同）；
+   - `serve`/`http`/`mcp` 的参数里含 `-h`/`--help` 时打印该模式的帮助并
+     退出 0，*不起服务*；
+   - 否则 `serve` → HTTP 模式（REST + `/mcp`），`http` → HTTP 模式（仅
+     REST），`mcp <transport>` → MCP 模式；
+6. 其余 → CLI 模式。
 
 **13.3. 内建参数。** 全局命名空间 `--xyz.*` 可在命令行任意位置（`--`
 终止符之前）消费；在
@@ -760,10 +792,17 @@ ldflags；Rust：`set_version`）。
    添加。
 6. **渲染** —— §9 渲染器作为独立函数（JSON 值进，渲染字节出），由 CLI
    与 MCP 共享。
+7. **运行时环境上下文** —— 公开访问器，让 handler、自定义输出函数、中间件
+   或宿主程序无需各自重复探测即可查询解析后的环境：UI 语言、主输出是否交互
+   式（TTY）、是否去色。Go：`xyz.Language() string`、`xyz.Interactive()
+   bool`、`xyz.NoColor() bool`、`xyz.Env() EnvContext{Language, Interactive,
+   NoColor}`，以及逐请求的 `xyz.LanguageFromCtx(ctx)`（§11.7）。除 ctx
+   访问器外均为进程/CLI 语境；TTY 探测是共享叶子（Go：`termx.Interactive`），
+   格式轴（§10.7）与保留的样式轴（§10.7a）都查询它。
 
 参考对接点：Go 的 `registry.New` / `spec.Define(...)` /
-`cli.NewWithOptions` + `App.Use` / `httpapi.HandlerFor` / `mcp.Server`；
-Rust 的 `xyz_rust::Registry` / `spec::command::Command` /
+`cli.NewWithOptions` + `App.Use` / `httpapi.HandlerFor` / `mcp.Server` /
+`xyz.Env`；Rust 的 `xyz_rust::Registry` / `spec::command::Command` /
 `cli::App::new_with_options` + `use_mw` / `httpapi::handler_for` /
 `mcp::handler::build`。
 

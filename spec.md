@@ -499,12 +499,16 @@ the expected and received counts (reference message:
 allowed, structure mandatory).
 
 **10.4. Built-ins.** `-h/--help` prints the help for the deepest matched node
-(parents list children); `-v/--version` prints `<bin> version <version>`
-and exits 0; `--json` switches result rendering to JSON; the `--` terminator
-(§10.2) stops `-v`, `--version` and `--json` recognition — tokens past it
-are positional data, never switches; `completion bash|zsh|fish` emits a
-working completion
-script for the binary name; unknown shells exit 2. Help layout order:
+(parents list children); `-v/--version` prints `<app-name> version
+<app-version>` and exits 0; `--json` switches result rendering to JSON; the
+`--` terminator (§10.2) stops `-v`, `--version` and `--json` recognition —
+tokens past it are positional data, never switches; `completion
+bash|zsh|fish` emits a working completion script for the binary name; unknown
+shells exit 2. The `help` mode additionally takes an argument — `help
+<command-path>` prints that command's detailed help (identical to `<path>
+-h`) and `help <mode>` prints the mode's help — and each server mode answers
+`-h`/`--help` with its own help instead of starting (dispatch in §13.2).
+Help layout order:
 description → `Usage:` → optional `Aliases:` → `命令:`/`Flags:` → `Global
 Flags:` / assistance lines, with inline hints `(default …)`, `(env …)`,
 `(oneof a|b)` woven into flag descriptions. Flag type annotations in
@@ -681,6 +685,21 @@ and MUST NOT affect the response body or status. (HTTP header names are
 case-insensitive; the reference Go implementation emits them in net/http's
 canonical `X-App-Version` / `X-Xyz-Version` casing.)
 
+**11.7. Per-request language (Accept-Language).** The HTTP frontend resolves a
+language per request from the `Accept-Language` header: the highest-`q`
+supported tag wins (`zh*` → zh-CN, `en*` → en); when the header is absent or
+lists no supported tag, it falls back to the process default language (§15.5).
+The resolved language is carried in the request context so that (a)
+framework-generated response messages (e.g. the invalid-JSON-body 400, the
+§8.6 error body's framework text) are emitted in that language, and (b) the
+handler can read it and localize its own output. A public accessor exposes it
+(Go: `xyz.LanguageFromCtx(ctx)`; the raw carry is `langx.WithLang`/`FromCtx`).
+This is per-request and independent of the process-level CLI language; the CLI
+and MCP channels use the process language (§15.5). Reference note: deep
+pipeline messages (decode/type-conversion) MAY remain English where not yet
+catalogued; the request language is nonetheless available in the context for
+handlers and for progressively localizing them.
+
 ---
 
 ## 12. MCP frontend
@@ -795,26 +814,47 @@ learn the application identity.
 
 ## 13. Root dispatcher
 
-**13.1. Mode words.** Default mode words: `serve` (HTTP), `mcp`, `help`.
-They are reserved top-level names (§3.4), renamable through config, and
-used verbatim by all library messages (no hard-coded words anywhere else).
-Resolution rules: empty config field keeps the default; words must be plain
-(no leading dash, no whitespace) and pairwise distinct; violations exit 2.
+**13.1. Mode words.** Default mode words: `serve` (HTTP REST + `/openapi.json`
++ the `/mcp` endpoint), `http` (HTTP REST + `/openapi.json` only — the
+standalone HTTP interface, no `/mcp`), `mcp`, and `help`. They are renamable
+through config and used verbatim by all library messages (no hard-coded words
+anywhere else). Resolution rules: an empty config field keeps the default;
+words must be plain (no leading dash, no whitespace) and pairwise distinct;
+violations exit 2.
+
+**Namespaced form and shadowing.** Every mode word `W` also has an
+always-available namespaced form `xyz.W` (matching the `--xyz.*` parameter
+namespace), which is NEVER shown in help. A user command whose top-level
+segment equals `W` *shadows* the bare word: `W` then routes to the user's
+command and the built-in mode stays reachable only via `xyz.W`. Shadowing
+replaces the old hard reservation — registering a command named e.g. `serve.*`
+is no longer an error (§3.4). The overview lists a mode's bare word only when
+unshadowed; a shadowed mode is omitted (the user's command appears in the
+command table instead) and its `xyz.W` form stays hidden. CLI-skipped commands
+do not shadow.
 
 **13.2. Dispatch order** (fixed):
 
 1. empty registry → silent no-op, exit 0;
-2. `-v`/`--version` (before the `--` terminator) → `<bin> version <v>`,
-   exit 0;
+2. `-v`/`--version` (before the `--` terminator) → `<app-name> version
+   <app-version>`, exit 0;
 3. strip global `--xyz.*` built-ins (invalid values exit 2);
-4. empty args / `help` / `--help` / `-h` → overview (mode list + command
-   table; the table is omitted when CLI is disabled);
-   The overview MAY carry two raw config blocks — `help_before` at the top
-   and `help_after` at the bottom (printed even when the table is omitted;
-   same verbatim / newline-normalized / empty-no-op semantics as the `-h`
-   blocks).
-5. `serve` → HTTP mode; `mcp <transport>` → MCP mode; anything else → CLI
-   mode.
+4. empty args / root `--help` / `-h` → overview (mode list + command table;
+   the table is omitted when CLI is disabled). The overview MAY carry two raw
+   config blocks — `help_before` at the top and `help_after` at the bottom
+   (printed even when the table is omitted; same verbatim / newline-normalized
+   / empty-no-op semantics as the `-h` blocks);
+5. mode match on the first token: `xyz.W` always selects the built-in mode;
+   bare `W` selects it only when unshadowed (§13.1). Then:
+   - `help` mode → `help` with no argument prints the overview; `help <mode>`
+     prints that mode's help; `help <command-path>` (dotted `user.add` or
+     spaced `user add`) prints that command's detailed help (identical to
+     `<command-path> -h`);
+   - `serve`/`http`/`mcp` with `-h`/`--help` in their arguments print the
+     mode's help and exit 0 *without starting a server*;
+   - otherwise `serve` → HTTP mode (REST + `/mcp`), `http` → HTTP mode (REST
+     only), `mcp <transport>` → MCP mode;
+6. anything else → CLI mode.
 
 **13.3. Built-in parameters.** Global namespace `--xyz.*` consumed anywhere
 on the command line *before the `--` terminator* (tokens past `--` are
@@ -902,10 +942,19 @@ Every SDK MUST expose, independently of the one-line entry point:
    arbitrary SDK features may be added.
 6. **Rendering** — the §9 renderer as a standalone function (JSON value in,
    rendered bytes out) shared by CLI and MCP.
+7. **Runtime environment context** — public accessors letting a handler, a
+   custom output function, middleware, or the host program query the resolved
+   environment without re-probing: the UI language, whether the primary output
+   is interactive (TTY), and whether colour is suppressed. Go: `xyz.Language()
+   string`, `xyz.Interactive() bool`, `xyz.NoColor() bool`, `xyz.Env()
+   EnvContext{Language, Interactive, NoColor}`, and the per-request
+   `xyz.LanguageFromCtx(ctx)` (§11.7). These are process/CLI-scoped except the
+   ctx accessor; the TTY probe is a shared leaf (Go: `termx.Interactive`) that
+   the format axis (§10.7) and the reserved style axis (§10.7a) both consult.
 
 Reference crossing points: Go's `registry.New` / `spec.Define(...)` /
-`cli.NewWithOptions` + `App.Use` / `httpapi.HandlerFor` / `mcp.Server`;
-Rust's `xyz_rust::Registry` / `spec::command::Command` /
+`cli.NewWithOptions` + `App.Use` / `httpapi.HandlerFor` / `mcp.Server` /
+`xyz.Env`; Rust's `xyz_rust::Registry` / `spec::command::Command` /
 `cli::App::new_with_options` + `use_mw` / `httpapi::handler_for` /
 `mcp::handler::build`.
 

@@ -125,6 +125,11 @@ version when:
       (§11.3).
 - [ ] A.30 Middleware order CORS → Bearer → Gzip and preflight-before-auth
       204 behavior (§11.4).
+- [ ] A.62 Per-request language per §11.7: `Accept-Language` resolves the
+      highest-`q` supported tag (zh*→zh-CN, en*→en); absent/unsupported falls
+      back to the process default; framework-generated HTTP messages emit in
+      the resolved language; the language rides the request context and is
+      readable by handlers (`LanguageFromCtx`).
 
 ### MCP
 - [ ] A.31 Uses the official MCP SDK of the language (§12.1).
@@ -157,8 +162,22 @@ version when:
       (§4 below) green.
 - [ ] A.40 Signal-driven cancellation reaches handlers; HTTP drains
       in-flight requests (§13.7).
-- [ ] A.41 Embedding surfaces §14 items 1–6 all present and documented.
+- [ ] A.41 Embedding surfaces §14 items 1–7 all present and documented.
 - [ ] A.42 Bilingual READMEs cross-linked; adapters guide shipped (§15.2).
+- [ ] A.60 Mode words per §13.1: `serve` (REST+/mcp), `http` (REST only, no
+      /mcp), `mcp`, `help`; each also reachable as the always-available,
+      help-hidden `xyz.<word>`; a user command whose top segment equals a mode
+      word shadows the bare form (which then routes to the user command) while
+      `xyz.<word>` still reaches the built-in — registering such a command is
+      NOT an error; the overview lists a bare mode word only when unshadowed.
+- [ ] A.61 Help per §10.4/§13.2: `help` → overview; `help <command-path>`
+      (dotted or spaced) → that command's detailed help (= `<path> -h`);
+      `help <mode>` → mode help; `serve -h`/`http -h`/`mcp -h` print mode help
+      and exit 0 without starting a server.
+- [ ] A.63 Runtime environment context per §14 item 7: public accessors for
+      the UI language, interactive/TTY, and colour-suppression, plus the
+      per-request language from context; the TTY probe is shared by the format
+      axis (§10.7) and the reserved style axis (§10.7a).
 
 ## 2. Class B — SHOULD
 
