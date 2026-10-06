@@ -14,7 +14,7 @@ beyond.
 
 | Document | What it is |
 |---|---|
-| [spec.md](spec.md) | **The normative contract** (v0.4.2). Definition vocabulary, types, defaults, validation, the invocation pipeline, error taxonomy (incl. rich code/detail/status and the shared error body), rendering (incl. per-channel output functions and CLI `--format`), the three frontends (incl. HTTP application-identity/SDK-version headers and MCP result `_meta`), the root dispatcher, embedding surface, experience conventions, governance. RFC 2119 language. |
+| [spec.md](spec.md) | **The normative contract** (v0.4.4). Definition vocabulary, types, defaults, validation, the invocation pipeline, error taxonomy (incl. rich code/detail/status and the shared error body), rendering (incl. per-channel output functions and CLI `--format`), the three frontends (incl. HTTP application-identity/SDK-version headers and MCP result `_meta`), the root dispatcher, embedding surface, experience conventions, governance. RFC 2119 language. |
 | [spec.zh-CN.md](spec.zh-CN.md) | Chinese mirror of spec.md (for readability; English is normative on conflict). |
 | [conformance.md](conformance.md) | The conformance programme: Class A/B checklists, the 11-command showcase fixture with byte-exact golden outputs, and the required feature matrix. |
 | [deviations.md](deviations.md) | The deviations register. Every SDK files here what differs from spec.md, classed as language-forced / SDK limitation / extension, statused open / resolved-in-spec / closed-by-implementation / retired, re-reviewed at every spec release. |
@@ -23,8 +23,8 @@ beyond.
 
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
-| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.2) | **v0.4.2** (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.2 | v0.4.1 (spec v0.4.2 clauses pending) | Rust reference implementation |
+| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.4) | **v0.4.4** (baseline anchor) | Go reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.3 | v0.4.2 (spec v0.4.4 clauses pending) | Rust reference implementation |
 
 ### Compatibility matrix
 
@@ -33,18 +33,24 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.2 | v0.4.2 ✅ | 0.4.2–0.4.3 ✅ |
+| v0.4.4 | v0.4.4 ✅ | pending (0.4.3 → v0.4.2) |
+| v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
-The v0.4.2 surface — rich errors (§8.5/§8.6), CLI `--format` with the
-full-name/conflict rule (§10.7), HTTP application-identity + SDK-version
-headers (§11.6) and MCP result `_meta` (§12.8) — is shipped by xyz-go
-v0.4.2 and xyz-rust 0.4.2 (crates.io: 0.4.3 — 0.4.2 carried a cli-only
-build defect, fixed in 0.4.3). The one MAY clause both leave to per-SDK
-choice is §9.5 per-channel output functions (neither ships them; commands
-without output functions render identically everywhere, so conformance
-holds). Full history: see the git tags of each repository.
+(v0.4.3 was skipped for spec/xyz-go; xyz-rust used 0.4.3 for a crates.io
+build fix.)
+
+The v0.4.4 surface — TTY-aware `--format auto` (§10.7), the four mode words
+with `xyz.<word>` namespacing & shadowing (§13.1), the `help <command>` /
+mode `-h` help (§10.4/§13.2), per-request `Accept-Language` (§11.7) and the
+runtime environment-context API (§14 item 7) — is shipped by xyz-go v0.4.4;
+xyz-rust catches up in a follow-up. The v0.4.2 surface (rich errors §8.5/§8.6,
+CLI `--format` §10.7, application-identity headers §11.6, MCP `_meta` §12.8)
+is shipped by both xyz-go v0.4.2 and xyz-rust 0.4.2–0.4.3. MAY clauses (§9.5
+output functions, §11.6 headers, §12.8 `_meta`, §8.5 rich-error layers) impose
+no obligation on an SDK that omits them. Full history: see the git tags of each
+repository.
 
 xyz-go files one open deviation (D-go-01, tagged unions); xyz-rust files
 [deviations.md](deviations.md) (duration sign, rendering via serialised

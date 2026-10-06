@@ -13,7 +13,7 @@ xyz 把一次命令定义变成三种接口——CLI、HTTP REST、MCP 工具服
 
 | 文档 | 内容 |
 |---|---|
-| [spec.md](spec.md) | **规范性契约**（v0.4.2）：定义词汇表、类型、默认值、校验、调用管线、错误分类学（含富化 code/detail/status 与共享错误体）、渲染（含逐通道输出函数与 CLI `--format`）、三个前端（含 HTTP 应用身份/SDK 版本响应头与 MCP 结果 `_meta`）、根派发器、嵌入面、体验约定、治理。RFC 2119 措辞。 |
+| [spec.md](spec.md) | **规范性契约**（v0.4.4）：定义词汇表、类型、默认值、校验、调用管线、错误分类学（含富化 code/detail/status 与共享错误体）、渲染（含逐通道输出函数与 CLI `--format`）、三个前端（含 HTTP 应用身份/SDK 版本响应头与 MCP 结果 `_meta`）、根派发器、嵌入面、体验约定、治理。RFC 2119 措辞。 |
 | [spec.zh-CN.md](spec.zh-CN.md) | spec.md 的中文镜像（英文为准） |
 | [conformance.md](conformance.md) | 一致性验收：A/B 两类检查单、11 命令展示程序与逐字节 golden 输出、必测的 feature 矩阵。 |
 | [deviations.md](deviations.md) | 差异登记表：各 SDK 与规范不符之处（语言必然 / SDK 缺失 / 扩展），状态分 open / resolved-in-spec / closed-by-implementation / retired，每次规范发布时复审。 |
@@ -22,8 +22,8 @@ xyz 把一次命令定义变成三种接口——CLI、HTTP REST、MCP 工具服
 
 | SDK | 包 | 目标规范版本 | 备注 |
 |---|---|---|---|
-| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go`（v0.4.2） | **v0.4.2**（基线锚点） | Go 参考实现 |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.2 | v0.4.1（spec v0.4.2 条款待补） | Rust 参考实现 |
+| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go`（v0.4.4） | **v0.4.4**（基线锚点） | Go 参考实现 |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.3 | v0.4.2（spec v0.4.4 条款待补） | Rust 参考实现 |
 
 ### 兼容矩阵
 
@@ -32,15 +32,20 @@ xyz 把一次命令定义变成三种接口——CLI、HTTP REST、MCP 工具服
 
 | 规范 | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.2 | v0.4.2 ✅ | 待补（rust 0.4.2 → spec v0.4.1） |
-| v0.4.1 | v0.4.1 | 0.4.2 ✅ |
+| v0.4.4 | v0.4.4 ✅ | 待补（0.4.3 → v0.4.2） |
+| v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
+| v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
-v0.4.2 新增面——富化错误（§8.5/§8.6）、CLI `--format` 含全称/冲突
-规则（§10.7）、HTTP 应用身份+SDK 版本响应头（§11.6）与 MCP 结果 `_meta`
-（§12.8）——已由 xyz-go v0.4.2 交付；xyz-rust 在后续发布跟进。在此之前，
-属于 MAY 的条款（输出函数 §9.5、响应头 §11.6、`_meta` §12.8、富化错误层
-§8.5）对 xyz-rust 0.4.2 不构成义务，它仍按 v0.4.1 保持合规。完整历史见各
+（spec/xyz-go 跳过了 v0.4.3；xyz-rust 用 0.4.3 做一次 crates.io 构建修复。）
+
+v0.4.4 新增面——TTY 感知的 `--format auto`（§10.7）、四模式词 +
+`xyz.<词>` 命名空间与遮蔽（§13.1）、`help <命令>` 与模式 `-h`（§10.4/§13.2）、
+逐请求 `Accept-Language`（§11.7）、运行时环境上下文 API（§14 item 7）——已由
+xyz-go v0.4.4 交付；xyz-rust 后续跟进。v0.4.2 面（富化错误 §8.5/§8.6、CLI
+`--format` §10.7、应用身份头 §11.6、MCP `_meta` §12.8）已由 xyz-go v0.4.2 与
+xyz-rust 0.4.2–0.4.3 双双交付。MAY 条款（§9.5 输出函数、§11.6 响应头、
+§12.8 `_meta`、§8.5 富化错误层）对不实现的 SDK 不构成义务。完整历史见各
 仓库的 git tag。
 
 xyz-go 登记一条开放差异（D-go-01，tagged unions）；xyz-rust 在

@@ -1,7 +1,7 @@
 # Deviations Register
 
 Every SDK MUST keep a register of behaviours that differ from
-[spec.md](spec.md) v0.4.2, each entry referencing the spec section it
+[spec.md](spec.md) v0.4.4, each entry referencing the spec section it
 departs from, declaring the class — **language-forced** (the language cannot
 express the spec as written), **SDK limitation** (not yet implemented), or
 **extension** (adds surface beyond the spec, not a divergence) — and the
@@ -31,9 +31,9 @@ Status vocabulary:
 
 ---
 
-## xyz-go v0.4.2 (baseline)
+## xyz-go v0.4.4 (baseline)
 
-Prior baselines held no deviations. xyz-go v0.4.2 implements spec v0.4.2 —
+Prior baselines held no deviations. xyz-go v0.4.4 implements spec v0.4.4 —
 including the §8.5/§8.6 rich errors, §10.7 `--format` (with the §10.7
 full-name/conflict rule), §11.6 application-identity + SDK-version response
 headers and §12.8 result `_meta` — except for one open deviation:
@@ -45,7 +45,7 @@ headers and §12.8 result `_meta` — except for one open deviation:
   tagged-union types at definition time by construction (there is no type to
   express them). §17.3 review at spec v0.4.1: the §4.7 tail (per-frontend
   skip policy) is a MAY and imposes no new obligation on a union-less SDK.
-  §17.3 review at spec v0.4.2: unchanged — entry remains open until Go
+  §17.3 review at spec v0.4.4: unchanged — entry remains open until Go
   grows a union argument surface.
 
 Resolved in v0.4.2 (absorbed into the spec, kept for provenance):
