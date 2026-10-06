@@ -1,7 +1,7 @@
 # Deviations Register
 
 Every SDK MUST keep a register of behaviours that differ from
-[spec.md](spec.md) v0.1.0, each entry referencing the spec section it
+[spec.md](spec.md) v0.4.2, each entry referencing the spec section it
 departs from, declaring the class — **language-forced** (the language cannot
 express the spec as written), **SDK limitation** (not yet implemented), or
 **extension** (adds surface beyond the spec, not a divergence) — and the
@@ -13,47 +13,65 @@ Format per entry:
 ```
 ### D-<sdk>-<nn> · spec §<section>
 Class: language-forced | SDK limitation | extension
-Status: open | resolved-in-spec
+Status: open | resolved-in-spec | closed-by-implementation | retired
 Detail: …
 ```
 
+Status vocabulary:
+
+- **open** — the divergence still exists; re-reviewed at each spec release.
+- **resolved-in-spec** — a spec revision absorbed the behaviour as normative
+  text (or an explicit MAY), so it is no longer a divergence. The entry is
+  kept for provenance.
+- **closed-by-implementation** — the SDK shipped the behaviour the spec
+  already required (or an extension was withdrawn); no spec change was
+  needed. Distinct from resolved-in-spec, which changes the spec.
+- **retired** — the entry is void (the feature was removed, or the entry was
+  filed in error). Kept only so the identifier is never reused.
+
 ---
 
-## xyz-go v0.4.0 (baseline)
+## xyz-go v0.4.2 (baseline)
 
-Prior baselines held no deviations. xyz-go v0.4.0 implements spec v0.4.0
-except for one open deviation:
+Prior baselines held no deviations. xyz-go v0.4.2 implements spec v0.4.2 —
+including the §8.5/§8.6 rich errors, §10.7 `--format` (with the §10.7
+full-name/conflict rule), §11.6 application-identity + SDK-version response
+headers and §12.8 result `_meta` — except for one open deviation:
 
 - **D-go-01 · spec §4.7 (tagged unions / oneOf):** Class SDK limitation,
-  open. Go has no language-native enum-argument support; the semantics are
-  now settled by the xyz-rust v0.4.0 implementation and conformance A.52,
-  so a Go implementation is planned against that fixture. Until then Go
-  rejects tagged-union types at definition time by construction (there is
-  no type to express them). §17.3 review at spec v0.4.1: the §4.7 tail
-  (per-frontend skip policy) is a MAY and imposes no new obligation on a
-  union-less SDK — entry remains open until Go grows a union argument
-  surface.
+  Status open. Go has no language-native enum-argument support; the semantics
+  are settled by the xyz-rust v0.4.0 implementation and conformance A.52, so
+  a Go implementation is planned against that fixture. Until then Go rejects
+  tagged-union types at definition time by construction (there is no type to
+  express them). §17.3 review at spec v0.4.1: the §4.7 tail (per-frontend
+  skip policy) is a MAY and imposes no new obligation on a union-less SDK.
+  §17.3 review at spec v0.4.2: unchanged — entry remains open until Go
+  grows a union argument surface.
 
-Open in v0.4.1 (extension, kept for provenance):
+Resolved in v0.4.2 (absorbed into the spec, kept for provenance):
 
-- **D-go-03 · spec §10.6 (output contract, extension):** Class extension,
-  open. Per-channel output functions on `CliHints/HTTPHints/MCPHints`
-  (`Output` fields) let an SDK adopt entirely channel-specific result
-  renderings (rich CLI text/color, full HTTP response control, custom MCP
-  textContent) while machine modes (`--json`, structuredContent) keep their
-  normative behaviour. Precedence is pinned by the SDK as machine mode >
-  Output > §12.7 envelope > default rendering; error paths never pass
-  through Output. Registered as an extension: spec §10.6 still governs the
-  default projections, and a future spec revision may absorb a
-  cross-language clause once both SDKs agree on the surface.
+- **D-go-03 · spec §9.5 (per-channel output functions):** Class extension,
+  Status resolved-in-spec. Per-channel output functions on
+  `CliHints/HTTPHints/MCPHints` (`Output` fields) let a command adopt entirely
+  channel-specific result renderings (rich CLI text/color, full HTTP response
+  control, custom MCP textContent) while machine modes keep their normative
+  behaviour. Precedence is pinned as machine/alternate format > Output >
+  §12.7 envelope > default rendering; error paths never pass through Output.
+  Originally registered as a Go extension at spec v0.4.1; spec v0.4.2 §9.5
+  absorbs it as an *optional* (MAY) cross-language clause, so it is no longer
+  a divergence — an SDK without output functions stays conforming, and the
+  new §10.7 `--format` precedence is defined against it. Conformance: the
+  §9.5 chain is exercised by A.54; the optional extension itself is not
+  separately A-numbered.
 
-Resolved in v0.4.0 (entry superseded, kept for provenance):
+Closed by implementation in v0.4.0 (kept for provenance):
 
 - **D-go-02 · spec §12.7 (content-block results):** Class SDK limitation,
-  Resolved by implementation in xyz-go v0.4.0: a reserved-envelope detector
-  (`block` package), CLI projection (inline text + temp-file paths for
-  binary blocks), MCP `Content` verbatim + envelope `structuredContent`,
-  and HTTP pass-through of the envelope body. Covered by
+  Status closed-by-implementation. xyz-go v0.4.0 shipped the behaviour §12.7
+  already required: a reserved-envelope detector (`block` package), CLI
+  projection (inline text + temp-file paths for binary blocks), MCP `Content`
+  verbatim + envelope `structuredContent`, and HTTP pass-through of the
+  envelope body. No spec change was needed. Covered by
   `TestCLIBlockProjection`, `TestMCPBlockResult`,
   `TestHTTPBlockEnvelopePassThrough` and `block.TestDetect*`.
 

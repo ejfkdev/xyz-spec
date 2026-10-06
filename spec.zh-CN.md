@@ -1,6 +1,6 @@
 # xyz 规范
 
-**Version 0.2.0** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.4.2** · Status: Baseline · Last updated: 2026-10-06
 
 English: [spec.md](spec.md)；冲突时以英文为准
 
@@ -13,8 +13,8 @@ English: [spec.md](spec.md)；冲突时以英文为准
 
 | SDK | 路径 / 包 | 版本基线 |
 |---|---|---|
-| xyz-go | `github.com/ejfkdev/xyz-go`（包名 `xyz`） | v0.1.0 |
-| xyz-rust | crates.io `xyz-rust`（库 `xyz-rust`；derive 辅助在 `xyz-rust-macros`） | 0.1.0 |
+| xyz-go | `github.com/ejfkdev/xyz-go`（包名 `xyz`） | v0.4.2（本规范） |
+| xyz-rust | crates.io `xyz-rust`（库 `xyz-rust`；derive 辅助在 `xyz-rust-macros`） | 0.4.2 → spec v0.4.1（spec v0.4.2 条款待补） |
 
 > 英文原版：[spec.md](spec.md)
 
@@ -143,7 +143,9 @@ SDK MUST 支持以下参数字段类型：
 以及递归类型（直接或相互）。参考实现在注册期拒绝这些（或编译期——更早，
 因此同样合规）。嵌套深度 SHOULD 作防御性限制（参考实现采用深度护栏 20）。
 
-**4.4. 无损转换** —— 共享解码器接受三种来源形态：字符串（CLI）、JSON
+### 4.4 无损转换
+
+共享解码器接受三种来源形态：字符串（CLI）、JSON
 形态（HTTP body）与任意 JSON（MCP）。数值形态之间的转换 MUST 无损：非
 整数值（如 `3.7`）MUST NOT 无声息地变成整数；位宽溢出 MUST 报错；负数
 转无符号 MUST 报错。布尔接受标准 true/false 字符串形态（
@@ -308,6 +310,37 @@ JSON `null` 输入在每一层都视为缺失。
 **8.4.** HTTP 与 MCP 通道上的错误携带*最具体*的 cause 消息（最内层的已
 知原因，而非包装层）。
 
+**8.5. 富化错误上下文（可选层）。** 除 Kind 外，一个已分类错误 MAY 携带
+三个可选层，纯语言原生错误（最简的 handler 错误——`errors.New`/
+`fmt.Errorf`、`anyhow!`/`std::io::Error`——归类为 `internal`，仅以自身消息
+渲染）一个都不需要提供：
+
+| 层 | 类型 | 作用 |
+|---|---|---|
+| `code` | 自由字符串 | 领域标识符（`USER_NOT_FOUND`、`QUOTA_EXCEEDED`），原样送达调用方；它绝不影响传输映射（那是 Kind 的职责），让客户端无需解析消息即可按领域语义分支 |
+| `detail` | 键值映射 | 结构化上下文，原样渲染进机器可读错误体 |
+| `status` | 整数 | 覆盖本错误的 §8.2 HTTP 状态码（仅 HTTP 通道）；0/缺省 = 由 Kind 派生 |
+
+SDK MUST 提供符合人体工学、可组合的方式来附加它们（Go：
+`errs.NotFound("user %s", id).WithCode("USER_NOT_FOUND").WithDetail("user_id", id).WithStatus(410)`；
+Rust：等价的 builder）。附加它们 MUST NOT 改变 §8.2 的 Kind 映射，显式
+`status` 覆盖除外。
+
+**8.6. 共享错误体。** 错误的机器可读形态是每个通道共用的同一个对象，使
+HTTP 体、CLI 机器模式 stderr 与 MCP `_meta` 认同一个形状：
+
+```json
+{"error":"<message>","kind":"<kind>","code":"<code>","detail":{…}}
+```
+
+`error` 是最具体的 cause 消息（§8.4），恒在；`kind` 恒在；`code` 与
+`detail` 仅在设置时出现。扁平的 `error` 字符串键逐字保留自 0.4.2 之前的契约
+（无 code/detail 的错误体恰为 `{"error":"<message>"}`），故既有客户端照常
+工作，更富的键纯属增补。逐通道交付：HTTP 以紧凑响应体写出（§9.3）；CLI
+在机器格式（§10.7）下写到 **stderr**（stdout 绝不承载错误）；MCP 把人类
+消息留在 `textContent`，把 `kind`/`code`/`detail` 附在结果 `_meta.xyz.error`
+下（§12.8）。
+
 ---
 
 ## 9. 渲染（无信封）
@@ -336,9 +369,11 @@ JSON `null` 输入在每一层都视为缺失。
 同一结果序列化为裸 JSON 值：作为文档片段渲染时（CLI/HTTP）采用两空格缩
 进并以换行结尾；MCP structured content 就是 JSON 值本身。
 
-**9.3.** HTTP 错误体为紧凑（单行）的 `{"error":"<message>"}` + 换行；
-HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
-`Content-Type: application/json; charset=utf-8`。
+**9.3.** HTTP 错误体为 §8.6 的共享错误对象，紧凑（单行）+ 换行——无
+code/detail 的错误即 `{"error":"<message>"}`（与 0.4.2 之前的契约逐字节一
+致），错误携带时再增补 `kind`/`code`/`detail` 键。HTTP 结果体为美化打印
+的裸 JSON + 换行。成功响应使用 `Content-Type: application/json;
+charset=utf-8`。
 
 **9.4.** 线上的字段顺序遵循声明顺序（参考实现保持声明顺序；map 同样按
 语言的序列化顺序渲染）。浮点显示采用语言数字格式化所能给出的最短表示
@@ -348,6 +383,20 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 注（语言造成的分歧，登记于 deviations.md）：没有结构反射的语言在序列化
 后可能无法区分结构体值与 map 值；两者都渲染成键值对，而这本来就是可观
 察的契约。
+
+**9.5. 逐通道输出函数（可选）。** SDK MAY 允许一条命令用逐通道输出函数
+覆盖它在某个或某些通道上的渲染（Go：`CliHints.Output` /
+`HTTPHints.Output` / `MCPHints.Output`；缺省 = 本节的默认渲染）。这是
+*可选*特性：不提供它的 SDK 仍然合规，未设输出函数的命令在各处渲染完全
+一致。提供时，三通道优先级相同——
+
+> 机器/替代格式标志（§10.7 `--format json|jsonl|markdown`，HTTP 恒为机器）
+> **>** 逐通道输出函数 **>** §12.7 块信封投影 **>** 默认渲染
+
+——且错误路径（§8）绝不经过输出函数：错误分类与 §8.6 错误体是框架专属。
+CLI 函数全权负责人类可读渲染（富文本、彩色、分页）；HTTP 函数全权负责
+状态码/响应头/响应体；MCP 函数全权负责 `textContent`，而
+`structuredContent` 仍由框架生成。本条吸收偏差 D-go-03（见 deviations.md）。
 
 ---
 
@@ -406,6 +455,35 @@ HTTP 结果体为美化打印的裸 JSON + 换行。成功响应使用
 **10.6. 输出契约。** 命令结果到 stdout；错误与诊断到 stderr。诊断携带
 `xyz[level]:` 前缀（日志级别经全局配置设置，§13.5）；默认级别为 `info`。
 
+**10.7. 输出格式（`--format`）。** 全局标志
+`--format <text|json|jsonl|markdown>` 选择结果渲染；`--json` 是
+`--format json` 的向后兼容别名。默认为 `text`（§9.1 人类可读渲染）。
+各格式：
+
+| `--format` | 渲染 |
+|---|---|
+| `text`（默认） | §9.1 人类可读渲染；走 §9.5 链（自定义输出 → 块投影 → 默认渲染） |
+| `json` | 美化 JSON（§9.2），裸值，两空格缩进 |
+| `jsonl` | JSON Lines：切片/数组结果每个元素一行**紧凑** JSON；其余结果整体一行紧凑 |
+| `markdown` | 结果以 Markdown 呈现：结构体 → 两列 `\| Field \| Value \|` 表；结构体切片 → 以字段为列的表；标量切片 → `- 元素` 无序列表；map → `\| Key \| Value \|` 表（字符串键排序）；标量裸出；单元格转义 `\|`→`\\|`、换行→`<br>` |
+
+优先级：显式的非 `text` `--format`（json/jsonl/markdown）绕过命令的自定义
+CLI 输出函数（§9.5）——机器与替代格式压过逐命令样式，正如 `--json` 一样；
+只有 `text` 走自定义输出链。非法的 `--format` 取值，或 `--format` 缺参数，
+是用法错误（退出码 2）。在机器格式（json/jsonl）下，命令错误以 §8.6 错误
+对象写到 **stderr**（json 美化、jsonl 紧凑），取代纯文本行；stdout 绝不
+承载错误，退出码不变（§10.5）。
+
+**全称与冲突规则。** 规范的、始终可用的形式是带命名空间的内置参数
+`--xyz.format=<fmt>`（§13.3），在 `--` 终止符之前任意位置消费；因带命名
+空间，它绝不与命令自己的 flag 冲突。裸 `--format`（及其 `--json` 别名）是
+便捷简写：*仅当目标命令自身没有定义 `format`（相应地 `json`）flag 时*才被
+识别为全局格式选择器。当命令确实定义了同名 flag，裸标志归命令所有（作为
+普通 §10.2 flag 绑定到命令字段），全局格式只来自 `--xyz.format`。这是 xyz
+内置参数的通则：全称 `--xyz.<name>` 永远可用，裸 `--<name>` 简写只在不
+遮蔽用户自定义参数时才生效。生效格式的优先级：裸 `--format`/`--json`
+（未被遮蔽时）> `--xyz.format` > `text`。
+
 ---
 
 ## 11. HTTP 前端
@@ -443,6 +521,28 @@ Bearer → Gzip → router。CORS：允许的 origin 列表（或 `*`）；OPTIO
 **11.5. 服务器**，配置取自全局配置：`addr`（serve 与 mcp-http 默认
 `:8080`）、read/write/idle 超时（0 = 仅 header 超时）、cert+key 同时给出
 则启用 TLS、取消时优雅排空（参考宽限：5 s）。
+
+**11.6. 服务器上下文响应头。** 每个 HTTP 响应 MAY 携带服务器上下文头，
+让调用方无需读体即可获知*是哪个应用程序*服务了本次请求、它的版本、以及
+是哪个命令处理了它。报告两个不同的版本：**应用程序**（用 xyz 构建的程序）
+的版本与 **xyz 库自身**的版本。启用时（默认），前端写：
+
+| 响应头 | 值 |
+|---|---|
+| `X-App-Name` | 应用程序名（配置覆盖优先，否则用二进制 basename） |
+| `X-App-Version` | *应用程序*的版本（配置覆盖优先，否则用构建期注入的版本槽；默认 `dev`） |
+| `X-XYZ-Version` | *xyz 库自身*的版本（是库，不是应用程序） |
+| `X-XYZ-Command` | 服务该路由的命令的点分入口名 |
+| `X-XYZ-Duration-Ms` | handler 调用耗时（整毫秒） |
+
+外加配置里用户自定义的静态头（Go：`Config.ResponseHeaders`，CLI
+`--xyz.header k=v`）。单个配置开关（Go：`Config.NoServerHeaders`，CLI
+`--xyz.no-server-headers`）抑制这五个自动 `X-App-*` / `X-XYZ-*` 头；用户
+自定义头是显式配置，无论如何都写。身份/静态头适用于*所有*路由，含
+`/healthz`、`/openapi.json` 与挂载的 `/mcp`；命令/耗时头是逐路由的。这些
+头是建议性上下文，MUST NOT 影响响应体或状态码。（HTTP 头名不区分大小写；
+参考 Go 实现以 net/http 的规范大小写 `X-App-Version` / `X-Xyz-Version`
+发出。）
 
 ---
 
@@ -484,9 +584,13 @@ openWorldHint true；`title:…` → title。
 `structuredContent`。失败返回 `isError: true`，其文本是分类错误的最具体
 消息（§8.4）。MCP 接口默认值只填充调用者未提供的键（§6.3）。
 
-**12.6. 服务器身份。** 名称默认为二进制的 basename（不含路径的文件名）；
-版本默认为 `0.0.0`。Bearer/CORS 配置适用于 http 传输（stdio 是本地通道，
-MUST NOT 被包裹——发出警告注记是参考行为）。
+**12.6. 服务器身份。** MCP `serverInfo` 标识的是*应用程序*（用 xyz 构建的
+程序），而非 xyz 库：`serverInfo.name` 默认为二进制 basename、
+`serverInfo.version` 默认为 `0.0.0`，两者都可由配置覆盖（Go：`Config.Name`
+/ `Config.Version`，与 HTTP 上报告的 `X-App-Name` / `X-App-Version` 同源，
+§11.6）。xyz 库自身的版本另行报告（`_meta.xyz.sdk_version`，§12.8；
+`X-XYZ-Version`，§11.6）。Bearer/CORS 配置适用于 http 传输（stdio 是本地
+通道，MUST NOT 被包裹——发出警告注记是参考行为）。
 
 **12.7. 内容块结果。** 命令 MAY 返回结构化内容块（text / image / audio /
 resource）以替代纯值。块以 MCP `Content` 原样传递；`structuredContent` 若
@@ -504,6 +608,28 @@ resource）以替代纯值。块以 MCP `Content` 原样传递；`structuredCont
 
 SDK 渲染"唯一键为 `content` 且各项恰好符合上述形状"的对象时 MUST 按块信封
 处理；保留形状正是块结果在 handler 与前端之间的类型擦除中存续的方式。
+
+**12.8. 服务器上下文结果元数据。** 与 HTTP §11.6 头对应，每个工具调用
+结果 MAY 在结果 `_meta`（MCP 保留的元数据对象）的 `xyz` 键下携带服务器
+上下文：
+
+```json
+{"xyz":{"app_name":"…","app_version":"…","sdk_version":"…","command":"…",
+        "duration_ms":12,"headers":{…},
+        "error":{"kind":"…","code":"…","detail":{…}}}}
+```
+
+`app_name`/`app_version` 标识*应用程序*（用 xyz 构建的程序），
+`sdk_version` 是 xyz 库自身的版本，`command`/`duration_ms` 描述本次调用；
+这五项在每次调用（成功与错误）都在。`headers` 镜像用户自定义静态头（未
+配置则缺席）；`error` 仅在 `isError` 结果上出现，携带 §8.6 的
+`kind`/`code`/`detail`，让客户端无需解析 `textContent` 即可按领域语义
+分支。抑制 HTTP 自动头（§11.6）的同一个配置开关也抑制 `_meta.xyz`（Go：
+`Config.NoServerHeaders` / MCP `NoServerMeta`）；官方 SDK 自己的 `_meta`
+条目（如 `io.modelcontextprotocol/serverInfo`）不受影响。应用身份还会流入
+initialize 结果的 MCP `serverInfo`（§12.6）——`serverInfo.name` = 应用名、
+`serverInfo.version` = 应用版本（替换 `0.0.0` 默认值）——于是看不到 HTTP
+头的 stdio 客户端也能获知应用身份。
 
 ---
 
@@ -541,6 +667,9 @@ SDK 渲染"唯一键为 `content` 且各项恰好符合上述形状"的对象时
 | `--cors=a,b` 或 `*` | cors origins | CORS 允许列表 |
 | `--session-timeout=30m` | （仅 mcp） | streamable HTTP 的空闲会话过期时间 |
 | `--default k=v`（可重复） | 通道默认 | serve/mcp 启动默认，补缺失的请求/调用键（§6.1） |
+| `--xyz.header k=v`（可重复） | 响应头 | 每个 HTTP 响应的静态上下文头，镜像进 MCP `_meta.xyz.headers`（§11.6/§12.8） |
+| `--xyz.no-server-headers` | 无服务器头 | 抑制自动 `X-App-*`/`X-XYZ-*` 头与 MCP `_meta.xyz`（§11.6/§12.8）；用户 `--xyz.header` 值仍生效 |
+| `--xyz.format=text\|json\|jsonl\|markdown` | 输出格式 | CLI 默认输出格式（§10.7）；裸 `--format`/`--json` 在未遮蔽时覆盖它 |
 
 **13.4. 能力开关。** 运行时开关（no_cli / no_mcp / no_http）只禁用相应
 通道的运行时路径：模式词、`help`、`-v`、`completion` 继续工作；进入被禁

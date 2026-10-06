@@ -59,6 +59,14 @@ version when:
 - [ ] A.18 Classification walks the language error chain; uncoded ≠ internal
       (§8.3); handler classification survives language error wrapping.
 - [ ] A.19 Channel error bodies carry the most specific cause message (§8.4).
+- [ ] A.55 Rich error context (§8.5/§8.6): the optional `code`/`detail`/
+      `status` layers attach via the ergonomic builder; `code`/`detail` never
+      change the §8.2 Kind mapping (only `status` overrides the HTTP code);
+      the shared error body `{"error","kind","code","detail"}` renders on all
+      three channels — HTTP compact body keeps the flat `error` string
+      byte-identical for code-less errors, CLI machine mode writes it to
+      stderr, MCP puts kind/code/detail under `_meta.xyz.error`; a plain
+      language error carries none and still renders `{"error":…,"kind":…}`.
 
 ### Rendering
 - [ ] A.20 No envelope; §9.1 table exact for every row (bare scalars,
@@ -70,10 +78,6 @@ version when:
 ### CLI
 - [ ] A.22 Tree, aliases and conflicts per §10.1 (aliases dispatch but are
       not listed).
-- [ ] A.43 Default subcommand per §10.1: unmatched non-flag first
-      argument forwards the entire argument list to the marked command;
-      one default per parent (duplicate = registration error); empty
-      argument lists, flags, explicit paths and aliases unaffected.
 - [ ] A.23 Flag forms: `--name v`, `--name=v`, `-x v`, `-xv`, `-x=v`,
       boolean optional value, slice accumulation, `--` terminator (§10.2).
 - [ ] A.24 Positional prefix rule enforced at registration (§10.3).
@@ -82,6 +86,25 @@ version when:
       (§10.5).
 - [ ] A.26 Results to stdout, diagnostics to stderr with `xyz[level]:`
       prefix (§10.6).
+- [ ] A.43 Default subcommand per §10.1: unmatched non-flag first
+      argument forwards the entire argument list to the marked command;
+      one default per parent (duplicate = registration error); empty
+      argument lists, flags, explicit paths and aliases unaffected.
+- [ ] A.54 Output formats per §10.7: `--format text|json|jsonl|markdown`
+      with `--json` as the `--format json` alias; text runs the §9.5 chain,
+      the other three bypass a command's custom CLI output; jsonl emits one
+      compact line per element for slices (a single line otherwise);
+      markdown renders the §10.7 table/bullet shapes with `|`→`\|` and
+      newline→`<br>` cell escaping; an invalid value or a missing argument
+      exits 2; in json/jsonl a command error goes to stderr as the §8.6
+      object, never to stdout.
+- [ ] A.58 Format full name & conflict rule per §10.7: the namespaced
+      `--xyz.format=<fmt>` is consumed anywhere before `--` and never
+      collides with command flags; the bare `--format`/`--json` is honoured
+      as the global selector only when the target command defines no
+      `format`/`json` flag — when it does, the bare flag binds to the
+      command's field and the global format comes solely from `--xyz.format`;
+      precedence bare (unshadowed) > `--xyz.format` > text.
 
 ### HTTP
 - [ ] A.27 Route conflicts are registration errors; commands without hints
@@ -132,6 +155,10 @@ version when:
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact
       where marked).
+- [ ] A.45 Language (l10n) per §15.5: en + zh-CN bundled; identical canonical
+      keys and English wording; --xyz.lang > Config > LANG/LC_ALL > en
+      precedence; unknown values exit 2; per-language override table
+      applies; unknown keys never panic.
 - [ ] A.46 Command-level channel switches per §4.5a: CLI/HTTP/MCP skip bits
       remove the command from the marked channel only (no tree node / no
       route / no tool); overview keeps listing; CLI skip also drops
@@ -144,15 +171,26 @@ version when:
       `(0, false)` silently for an unknown CLI top word (no command,
       alias, flag or default subcommand); all other paths identical to the
       main entry; CLI-skipped segments count as misses.
-- [ ] A.50 Daemon commands per §4.5a: the marker implies CLI-only
-      consumption, no result rendering, graceful exit 0 on ctx cancel.
 - [ ] A.49 Help flag type fidelity per §10.4: `-h` renders `string`/
       `integer`/`number`/`bool`/`duration`/`time`/`strings (repeatable)`
       by field type.
-- [ ] A.45 Language (l10n) per §15.5: en + zh-CN bundled; identical canonical
-      keys and English wording; --xyz.lang > Config > LANG/LC_ALL > en
-      precedence; unknown values exit 2; per-language override table
-      applies; unknown keys never panic.
+- [ ] A.50 Daemon commands per §4.5a: the marker implies CLI-only
+      consumption, no result rendering, graceful exit 0 on ctx cancel.
+- [ ] A.56 Server-context response headers per §11.6 (MAY): when enabled,
+      every HTTP response carries `X-App-Name`/`X-App-Version` (the
+      application identity), `X-XYZ-Version` (the xyz SDK's own version,
+      distinct from the app's), `X-XYZ-Command`/`X-XYZ-Duration-Ms`, plus
+      config `--xyz.header` statics; the identity/static headers reach all
+      routes (`/healthz`, `/openapi.json`, mounted `/mcp`), command/duration
+      are per-route; `NoServerHeaders` suppresses the five automatic headers
+      but keeps user statics; headers never alter body or status.
+- [ ] A.57 Server-context result metadata per §12.8 (MAY): each tool result
+      carries `_meta.xyz` with app_name/app_version/sdk_version/command/
+      duration_ms (+ headers when configured, + error kind/code/detail on
+      isError); `NoServerMeta` suppresses `_meta.xyz` while leaving the
+      official SDK's own `_meta` entries intact; the application identity
+      also drives `serverInfo.name`/`serverInfo.version` (overriding the
+      basename/`0.0.0` defaults).
 - [ ] B.2 Core layers free of third-party dependencies beyond the
       language-standard JSON implementation (§15.3).
 - [ ] B.3 Nested decode depth guard (reference value 20) (§4.3).

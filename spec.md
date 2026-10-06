@@ -1,6 +1,6 @@
 # The xyz Specification
 
-**Version 0.2.0** · Status: Baseline · Last updated: 2026-08-22
+**Version 0.4.2** · Status: Baseline · Last updated: 2026-10-06
 
 This document is the normative contract for every xyz SDK. A library may call
 itself an *xyz SDK* only if it implements this specification. The key words
@@ -12,8 +12,8 @@ Reference implementations (normative anchors for ambiguous cases):
 
 | SDK | Path / package | Version baseline |
 |---|---|---|
-| xyz-go | `github.com/ejfkdev/xyz-go` (package name `xyz`) | v0.1.0 |
-| xyz-rust | crates.io `xyz-rust` (lib `xyz-rust`; derive helpers in `xyz-rust-macros`) | 0.1.0 |
+| xyz-go | `github.com/ejfkdev/xyz-go` (package name `xyz`) | v0.4.2 (this spec) |
+| xyz-rust | crates.io `xyz-rust` (lib `xyz-rust`; derive helpers in `xyz-rust-macros`) | 0.4.2 → spec v0.4.1 (spec v0.4.2 clauses pending) |
 
 > Also available: [中文版](spec.zh-CN.md)
 
@@ -162,7 +162,9 @@ mutual). Reference implementations reject these at registration (or compile
 time, which is earlier and therefore also conformant). Nesting depth SHOULD
 be bounded defensively (reference implementations use a depth guard of 20).
 
-**4.4. Lossless conversion** — The shared decoder accepts three source forms:
+### 4.4 Lossless conversion
+
+The shared decoder accepts three source forms:
 strings (CLI), JSON shapes (HTTP body), and arbitrary JSON (MCP). Conversions
 between numeric forms MUST be lossless: a non-integral value (e.g. `3.7`)
 MUST NOT silently become an integer; width overflow MUST error; negative to
@@ -355,6 +357,40 @@ MUST preserve the classification when the language wraps errors.
 **8.4.** Errors on the HTTP and MCP channels carry the *most specific* cause
 message (innermost known cause, not the wrapper).
 
+**8.5. Rich error context (optional layers).** Beyond its Kind, a coded error
+MAY carry three opt-in layers, none of which a plain language error needs to
+supply (the simplest handler error — `errors.New`/`fmt.Errorf`, `anyhow!`/
+`std::io::Error` — classifies `internal` and renders with its message alone):
+
+| Layer | Type | Effect |
+|---|---|---|
+| `code` | free-form string | a domain identifier (`USER_NOT_FOUND`, `QUOTA_EXCEEDED`) carried verbatim to the caller; it never affects transport mapping (Kind does) and lets clients branch on domain semantics without parsing messages |
+| `detail` | key/value map | structured context rendered as-is into the machine-readable error body |
+| `status` | integer | overrides the §8.2 HTTP status for this error (HTTP channel only); 0/absent = derive from Kind |
+
+The SDK MUST provide an ergonomic, composable way to attach these (Go:
+`errs.NotFound("user %s", id).WithCode("USER_NOT_FOUND").WithDetail("user_id", id).WithStatus(410)`;
+Rust: an equivalent builder). Attaching them MUST NOT change the Kind mapping
+of §8.2 except for the explicit `status` override.
+
+**8.6. Shared error body.** The machine-readable form of an error is one
+object shared by every channel, so HTTP bodies, CLI machine-mode stderr and
+MCP `_meta` agree on a single shape:
+
+```json
+{"error":"<message>","kind":"<kind>","code":"<code>","detail":{…}}
+```
+
+`error` is the most-specific cause message (§8.4) and is always present;
+`kind` is always present; `code` and `detail` appear only when set. The flat
+`error` string key is retained verbatim from the pre-0.4.2 contract
+(`{"error":"<message>"}` is exactly the body of an error with no code/detail),
+so existing clients keep working and the richer keys are purely additive.
+Per-channel delivery: HTTP writes it as the compact response body (§9.3);
+the CLI in a machine format (§10.7) writes it to **stderr** (stdout never
+carries errors); MCP keeps the human message in `textContent` and attaches
+`kind`/`code`/`detail` under the result `_meta.xyz.error` (§12.8).
+
 ---
 
 ## 9. Rendering (envelope-free)
@@ -384,10 +420,12 @@ serialises the same result as a bare JSON value with two-space indentation
 and a trailing newline when rendered as a document fragment (CLI/HTTP);
 MCP structured content is the JSON value itself.
 
-**9.3.** HTTP error bodies are compact (single-line)
-`{"error":"<message>"}` + newline; HTTP result bodies are the pretty-printed
-bare JSON + newline. Success responses use `Content-Type: application/json;
-charset=utf-8`.
+**9.3.** HTTP error bodies are the §8.6 shared error object, compact
+(single-line) + newline — `{"error":"<message>"}` for an error with no
+code/detail (byte-identical to the pre-0.4.2 contract), extended with
+`kind`/`code`/`detail` keys when the error carries them. HTTP result bodies
+are the pretty-printed bare JSON + newline. Success responses use
+`Content-Type: application/json; charset=utf-8`.
 
 **9.4.** Field order on the wire follows declaration order (reference
 implementations preserve declaration order; maps likewise render in the
@@ -401,6 +439,25 @@ Note (language-forced divergence, registered in deviations.md): languages
 without structural reflection may not distinguish struct and map values
 after serialisation; both render as key/value pairs, which is the observable
 contract anyway.
+
+**9.5. Per-channel output functions (optional).** An SDK MAY let a command
+override its rendering on one or more channels with a per-channel output
+function (Go: `CliHints.Output` / `HTTPHints.Output` / `MCPHints.Output`;
+absent = the default rendering of this section). This is an *optional*
+feature: an SDK that does not offer it is still conforming, and a command
+defined without output functions renders identically everywhere. Where
+offered, the precedence is the same on all three channels —
+
+> machine/alternate format flag (§10.7 `--format json|jsonl|markdown`, HTTP
+> is always machine) **>** per-channel output function **>** §12.7 block
+> envelope projection **>** default rendering
+
+— and the error path (§8) never passes through an output function: error
+classification and the §8.6 body are the framework's alone. The CLI function
+owns the human rendering (rich text, colour, paging); the HTTP function owns
+status/headers/body; the MCP function owns `textContent` while
+`structuredContent` stays framework-generated. This clause absorbs deviation
+D-go-03 (see deviations.md).
 
 ---
 
@@ -474,6 +531,41 @@ lines, repository URLs and anything else are the user's own text.
 diagnostics go to stderr. Diagnostics carry the `xyz[level]:` prefix
 (log level via the global config, §13.5); the default level is `info`.
 
+**10.7. Output formats (`--format`).** A global flag
+`--format <text|json|jsonl|markdown>` selects the result rendering;
+`--json` is a backward-compatible alias for `--format json`. The default is
+`text` (the §9.1 human rendering). The formats:
+
+| `--format` | Rendering |
+|---|---|
+| `text` (default) | §9.1 human rendering; runs the §9.5 chain (custom output → block projection → default render) |
+| `json` | pretty JSON (§9.2), bare value, two-space indent |
+| `jsonl` | JSON Lines: a slice/array result emits one **compact** JSON value per element per line; any other result emits a single compact line |
+| `markdown` | the result as Markdown: struct → a two-column `\| Field \| Value \|` table; slice of structs → a column-per-field table; slice of scalars → `- item` bullets; map → a `\| Key \| Value \|` table sorted by string key; scalars bare; cells escape `\|`→`\\|` and newlines→`<br>` |
+
+Precedence: an explicit non-`text` `--format` (json/jsonl/markdown) BYPASSES
+a command's custom CLI output function (§9.5) — machine and alternate
+formats win over per-command styling, exactly as `--json` does; only `text`
+runs the custom-output chain. An invalid `--format` value, or `--format` with
+no argument, is a usage error (exit 2). In the machine formats (json/jsonl) a
+command error is written to **stderr** as the §8.6 error object (json pretty,
+jsonl compact) instead of the plain text line; stdout never carries errors,
+and the exit code is unchanged (§10.5).
+
+**Full name and conflict rule.** The canonical, always-available form is the
+namespaced built-in `--xyz.format=<fmt>` (§13.3), consumed anywhere before the
+`--` terminator; being namespaced, it never collides with a command's own
+flags. The bare `--format` (and its `--json` alias) is a convenience short
+form: it is recognised as the global format selector *only when the target
+command does not itself define a `format` (respectively `json`) flag*. When the
+command does define one, the bare flag belongs to the command (it binds to the
+command's field as an ordinary §10.2 flag) and the global format comes solely
+from `--xyz.format`. This is the general rule for xyz built-ins: the full
+`--xyz.<name>` form always works, and a bare `--<name>` short form is honoured
+only where it does not shadow a user-defined parameter. Precedence for the
+effective format: bare `--format`/`--json` (when not shadowed) >
+`--xyz.format` > `text`.
+
 ---
 
 ## 11. HTTP frontend
@@ -516,6 +608,32 @@ size.
 and mcp-http), read/write/idle timeout (0 = header-timeout only), TLS when
 cert+key are both given, graceful drain on cancellation (reference grant:
 5 s).
+
+**11.6. Server-context response headers.** Every HTTP response MAY carry
+server-context headers so a caller can read *which application* served the
+request, its version, and which command handled it — without a body
+round-trip. Two distinct versions are reported: the **application's** (the
+program built on xyz) and the **xyz SDK's** own. When enabled (the default),
+the frontend writes:
+
+| Header | Value |
+|---|---|
+| `X-App-Name` | the application name (config override, else the binary basename) |
+| `X-App-Version` | the *application's* version (config override, else the build-injected version slot; default `dev`) |
+| `X-XYZ-Version` | the *xyz SDK's* own version (the library, not the application) |
+| `X-XYZ-Command` | the dotted entry name of the command that served the route |
+| `X-XYZ-Duration-Ms` | the handler invocation time in whole milliseconds |
+
+plus any user-defined static headers from config (Go: `Config.ResponseHeaders`,
+CLI `--xyz.header k=v`). A single config switch (Go: `Config.NoServerHeaders`,
+CLI `--xyz.no-server-headers`) suppresses the five automatic `X-App-*` /
+`X-XYZ-*` headers; user-defined headers are explicit configuration and are
+written regardless. The identity/static headers apply to *all* routes
+including `/healthz`, `/openapi.json` and a mounted `/mcp`; the
+command/duration headers are per-route. These headers are advisory context
+and MUST NOT affect the response body or status. (HTTP header names are
+case-insensitive; the reference Go implementation emits them in net/http's
+canonical `X-App-Version` / `X-Xyz-Version` casing.)
 
 ---
 
@@ -569,8 +687,13 @@ by the *CLI renderer* (§9.1, trailing newline trimmed) **and**
 (§8.4). MCP interface defaults only fill keys the caller did not supply
 (§6.3).
 
-**12.6. Server identity.** Name defaults to the binary basename; version to
-`0.0.0`. Bearer/CORS configuration applies to the http transport (stdio is
+**12.6. Server identity.** The MCP `serverInfo` identifies the *application*
+(the program built on xyz), not the xyz library: `serverInfo.name` defaults to
+the binary basename and `serverInfo.version` to `0.0.0`, both overridable by
+config (Go: `Config.Name` / `Config.Version`, the same values reported as
+`X-App-Name` / `X-App-Version` on HTTP, §11.6). The xyz SDK's own version is
+reported separately (`_meta.xyz.sdk_version`, §12.8; `X-XYZ-Version`, §11.6).
+Bearer/CORS configuration applies to the http transport (stdio is
 local and MUST NOT be wrapped — emitting a warning note is the reference
 behaviour).
 
@@ -595,6 +718,32 @@ An SDK that renders an object whose sole key is `content` with entries of
 exactly those shapes MUST treat it as the block envelope; the reserved
 shape is how the block result survives type-erasure between the handler and
 the frontends.
+
+**12.8. Server-context result metadata.** Mirroring the HTTP §11.6 headers,
+every tool-call result MAY carry server context under the result `_meta`
+(the MCP-reserved metadata object) at the key `xyz`:
+
+```json
+{"xyz":{"app_name":"…","app_version":"…","sdk_version":"…","command":"…",
+        "duration_ms":12,"headers":{…},
+        "error":{"kind":"…","code":"…","detail":{…}}}}
+```
+
+`app_name`/`app_version` identify the *application* (the program built on
+xyz), `sdk_version` is the xyz library's own version, and
+`command`/`duration_ms` describe the call; these five are present on every
+call (success and error alike). `headers` mirrors the user-defined static
+headers (absent when none are configured); `error` appears only on an
+`isError` result and carries the §8.6 `kind`/`code`/`detail`, so a client can
+branch on domain semantics without parsing `textContent`. The single config
+switch that suppresses the HTTP automatic headers (§11.6) also suppresses
+`_meta.xyz` (Go: `Config.NoServerHeaders` / MCP `NoServerMeta`); the official
+SDK's own `_meta` entries (e.g. `io.modelcontextprotocol/serverInfo`) are left
+untouched. The application identity additionally flows into the MCP
+`serverInfo` of the initialize result (§12.6) — `serverInfo.name` = the
+application name, `serverInfo.version` = the application version (replacing
+the `0.0.0` default) — so stdio clients, which see no HTTP headers, still
+learn the application identity.
 
 ---
 
@@ -638,6 +787,9 @@ flag / code config > library defaults. The table:
 | `--cors=a,b` or `*` | cors origins | CORS allowlist |
 | `--session-timeout=30m` | (mcp only) | idle-session expiry for streamable HTTP |
 | `--default k=v` (repeatable) | channel defaults | serve/mcp startup defaults injecting missing request/call keys (§6.1) |
+| `--xyz.header k=v` (repeatable) | response headers | static context headers on every HTTP response, mirrored into MCP `_meta.xyz.headers` (§11.6/§12.8) |
+| `--xyz.no-server-headers` | no server headers | suppress the automatic `X-App-*`/`X-XYZ-*` headers and MCP `_meta.xyz` (§11.6/§12.8); user `--xyz.header` values still apply |
+| `--xyz.format=text\|json\|jsonl\|markdown` | output format | the CLI default output format (§10.7); the bare `--format`/`--json` override it unless shadowed by a command's own flag |
 
 **13.4. Capability switches.** Runtime switches (no_cli / no_mcp / no_http)
 disable a channel's runtime path only: mode words, `help`, `-v`, `completion`
