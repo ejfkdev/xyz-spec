@@ -33,7 +33,7 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.4 | v0.4.4 ✅ | pending (0.4.3 → v0.4.2) |
+| v0.4.4 | v0.4.4 ✅ | implemented on master (release pending) |
 | v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
@@ -45,7 +45,8 @@ The v0.4.4 surface — TTY-aware `--format auto` (§10.7), the four mode words
 with `xyz.<word>` namespacing & shadowing (§13.1), the `help <command>` /
 mode `-h` help (§10.4/§13.2), per-request `Accept-Language` (§11.7) and the
 runtime environment-context API (§14 item 7) — is shipped by xyz-go v0.4.4;
-xyz-rust catches up in a follow-up. The v0.4.2 surface (rich errors §8.5/§8.6,
+xyz-rust implements the same surface on master (commits pushed, release
+pending by request). The v0.4.2 surface (rich errors §8.5/§8.6,
 CLI `--format` §10.7, application-identity headers §11.6, MCP `_meta` §12.8)
 is shipped by both xyz-go v0.4.2 and xyz-rust 0.4.2–0.4.3. MAY clauses (§9.5
 output functions, §11.6 headers, §12.8 `_meta`, §8.5 rich-error layers) impose
