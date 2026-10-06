@@ -532,25 +532,53 @@ diagnostics go to stderr. Diagnostics carry the `xyz[level]:` prefix
 (log level via the global config, §13.5); the default level is `info`.
 
 **10.7. Output formats (`--format`).** A global flag
-`--format <text|json|jsonl|markdown>` selects the result rendering;
+`--format <auto|text|json|jsonl|markdown>` selects the result rendering;
 `--json` is a backward-compatible alias for `--format json`. The default is
-`text` (the §9.1 human rendering). The formats:
+`auto` (TTY-aware, below). The formats:
 
 | `--format` | Rendering |
 |---|---|
-| `text` (default) | §9.1 human rendering; runs the §9.5 chain (custom output → block projection → default render) |
+| `auto` (default) | resolved by whether stdout is an interactive terminal — see below |
+| `text` | §9.1 human rendering; runs the §9.5 chain (custom output → block projection → default render) |
 | `json` | pretty JSON (§9.2), bare value, two-space indent |
 | `jsonl` | JSON Lines: a slice/array result emits one **compact** JSON value per element per line; any other result emits a single compact line |
 | `markdown` | the result as Markdown: struct → a two-column `\| Field \| Value \|` table; slice of structs → a column-per-field table; slice of scalars → `- item` bullets; map → a `\| Key \| Value \|` table sorted by string key; scalars bare; cells escape `\|`→`\\|` and newlines→`<br>` |
 
-Precedence: an explicit non-`text` `--format` (json/jsonl/markdown) BYPASSES
-a command's custom CLI output function (§9.5) — machine and alternate
-formats win over per-command styling, exactly as `--json` does; only `text`
-runs the custom-output chain. An invalid `--format` value, or `--format` with
-no argument, is a usage error (exit 2). In the machine formats (json/jsonl) a
-command error is written to **stderr** as the §8.6 error object (json pretty,
-jsonl compact) instead of the plain text line; stdout never carries errors,
-and the exit code is unchanged (§10.5).
+**TTY-aware default (`auto`).** `auto` resolves at render time by whether the
+result writer is an interactive terminal (TTY): interactive → the *interactive
+format* (reference default `text`, the aligned human rendering);
+non-interactive (piped, redirected, or invoked by another program) → the
+*piped format* (reference default `jsonl`, one compact record per line — the
+most useful form for programmatic consumption). Both halves are configurable
+(Go: `Config.FormatInteractive` / `Config.FormatPiped`), so an application can
+keep TTY-awareness yet choose e.g. `text`/`markdown` instead. TTY detection:
+the writer is interactive iff it is a character device (Go: an `*os.File`
+whose `Stat().Mode()` has `ModeCharDevice`); any non-file writer (a buffer, a
+pipe) is non-interactive. An SDK SHOULD let embedding code force the verdict
+(Go: `cli.Options.Interactive`) so the interactive path is testable without a
+real terminal.
+
+**Precedence (effective format), highest first:**
+
+1. bare `--format`/`--json` on this invocation (when not shadowed, below);
+2. `--xyz.format` (the command-line global, §13.3);
+3. the per-command hint (Go: `CliHints.Format`);
+4. the global code config (Go: `Config.Format`);
+5. the built-in default `auto`.
+
+Any tier may itself be `auto`, which then resolves via TTY as above; a concrete
+value at a tier pins the format. Command-line tiers (1–2) outrank code tiers
+(3–4); within code, the per-command hint (3) outranks the global config (4).
+
+**Custom output interaction.** An explicit non-`text` format
+(json/jsonl/markdown) BYPASSES a command's custom CLI output function (§9.5) —
+machine and alternate formats win over per-command styling, exactly as `--json`
+does; only `text` (including `auto` resolved to `text`) runs the custom-output
+chain. An invalid `--format` value, or `--format` with no argument, is a usage
+error (exit 2). In the machine formats (json/jsonl) a command error is written
+to **stderr** as the §8.6 error object (json pretty, jsonl compact) instead of
+the plain text line; stdout never carries errors, and the exit code is unchanged
+(§10.5).
 
 **Full name and conflict rule.** The canonical, always-available form is the
 namespaced built-in `--xyz.format=<fmt>` (§13.3), consumed anywhere before the
@@ -562,9 +590,27 @@ command does define one, the bare flag belongs to the command (it binds to the
 command's field as an ordinary §10.2 flag) and the global format comes solely
 from `--xyz.format`. This is the general rule for xyz built-ins: the full
 `--xyz.<name>` form always works, and a bare `--<name>` short form is honoured
-only where it does not shadow a user-defined parameter. Precedence for the
-effective format: bare `--format`/`--json` (when not shadowed) >
-`--xyz.format` > `text`.
+only where it does not shadow a user-defined parameter.
+
+**10.7a. Format and style are two separate axes.** The TTY signal drives two
+orthogonal, independently-configurable axes that MUST NOT be conflated into one
+"interactive" switch:
+
+- the **format axis** (encoding — this section): `auto|text|json|jsonl|markdown`;
+- the **style axis** (presentation — colour/richness, *reserved*): a future
+  `auto|always|never` colour mode (Go: a planned `Config.Color`) whose `auto`
+  resolves from the *same* TTY probe **and** from `NO_COLOR`/`TERM=dumb` and
+  force overrides.
+
+They share one underlying TTY detection but resolve independently, because
+their override semantics differ: `NO_COLOR` in a real terminal disables colour
+WITHOUT changing the format; piping to `less -R` may force colour on while the
+format stays the piped default; a user may want `--format jsonl` in an
+interactive terminal. Reference convention: mainstream CLIs (gh, kubectl,
+docker) keep the text/table *format* when piped and differ only by *colour* —
+i.e. the TTY signal's most visible effect is the style axis. An SDK MAY
+implement the style axis later; until then the format axis alone is normative,
+and the shared TTY probe is the seam the style axis plugs into.
 
 ---
 
@@ -789,7 +835,7 @@ flag / code config > library defaults. The table:
 | `--default k=v` (repeatable) | channel defaults | serve/mcp startup defaults injecting missing request/call keys (§6.1) |
 | `--xyz.header k=v` (repeatable) | response headers | static context headers on every HTTP response, mirrored into MCP `_meta.xyz.headers` (§11.6/§12.8) |
 | `--xyz.no-server-headers` | no server headers | suppress the automatic `X-App-*`/`X-XYZ-*` headers and MCP `_meta.xyz` (§11.6/§12.8); user `--xyz.header` values still apply |
-| `--xyz.format=text\|json\|jsonl\|markdown` | output format | the CLI default output format (§10.7); the bare `--format`/`--json` override it unless shadowed by a command's own flag |
+| `--xyz.format=auto\|text\|json\|jsonl\|markdown` | output format | the CLI default output format (§10.7); `auto` resolves by TTY. Command-line global tier — outranked only by a bare `--format`/`--json`, outranks the per-command hint and code config |
 
 **13.4. Capability switches.** Runtime switches (no_cli / no_mcp / no_http)
 disable a channel's runtime path only: mode words, `help`, `-v`, `completion`

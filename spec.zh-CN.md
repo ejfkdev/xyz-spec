@@ -456,23 +456,45 @@ CLI 函数全权负责人类可读渲染（富文本、彩色、分页）；HTTP
 `xyz[level]:` 前缀（日志级别经全局配置设置，§13.5）；默认级别为 `info`。
 
 **10.7. 输出格式（`--format`）。** 全局标志
-`--format <text|json|jsonl|markdown>` 选择结果渲染；`--json` 是
-`--format json` 的向后兼容别名。默认为 `text`（§9.1 人类可读渲染）。
-各格式：
+`--format <auto|text|json|jsonl|markdown>` 选择结果渲染；`--json` 是
+`--format json` 的向后兼容别名。默认为 `auto`（TTY 感知，见下）。各格式：
 
 | `--format` | 渲染 |
 |---|---|
-| `text`（默认） | §9.1 人类可读渲染；走 §9.5 链（自定义输出 → 块投影 → 默认渲染） |
+| `auto`（默认） | 按 stdout 是否交互式终端解析——见下 |
+| `text` | §9.1 人类可读渲染；走 §9.5 链（自定义输出 → 块投影 → 默认渲染） |
 | `json` | 美化 JSON（§9.2），裸值，两空格缩进 |
 | `jsonl` | JSON Lines：切片/数组结果每个元素一行**紧凑** JSON；其余结果整体一行紧凑 |
 | `markdown` | 结果以 Markdown 呈现：结构体 → 两列 `\| Field \| Value \|` 表；结构体切片 → 以字段为列的表；标量切片 → `- 元素` 无序列表；map → `\| Key \| Value \|` 表（字符串键排序）；标量裸出；单元格转义 `\|`→`\\|`、换行→`<br>` |
 
-优先级：显式的非 `text` `--format`（json/jsonl/markdown）绕过命令的自定义
-CLI 输出函数（§9.5）——机器与替代格式压过逐命令样式，正如 `--json` 一样；
-只有 `text` 走自定义输出链。非法的 `--format` 取值，或 `--format` 缺参数，
-是用法错误（退出码 2）。在机器格式（json/jsonl）下，命令错误以 §8.6 错误
-对象写到 **stderr**（json 美化、jsonl 紧凑），取代纯文本行；stdout 绝不
-承载错误，退出码不变（§10.5）。
+**TTY 感知默认（`auto`）。** `auto` 在渲染时按结果输出目标是否为交互式
+终端（TTY）解析：交互式 → *交互式格式*（参考默认 `text`，对齐的人类可读
+渲染）；非交互式（管道、重定向、被别的程序调用）→ *管道格式*（参考默认
+`jsonl`，每行一条紧凑记录——程序化消费最有用的形态）。两半都可配置（Go：
+`Config.FormatInteractive` / `Config.FormatPiped`），故应用可保留 TTY 感知
+而改用如 `text`/`markdown`。TTY 检测：输出目标为字符设备时判为交互式
+（Go：`*os.File` 且 `Stat().Mode()` 含 `ModeCharDevice`）；任何非文件
+输出（buffer、管道）判为非交互式。SDK SHOULD 允许嵌入代码强制该判定
+（Go：`cli.Options.Interactive`），以便无需真实终端即可测试交互式路径。
+
+**生效格式的优先级（由高到低）：**
+
+1. 本次调用的裸 `--format`/`--json`（未被遮蔽时）；
+2. `--xyz.format`（命令行全局，§13.3）；
+3. 逐命令 hint（Go：`CliHints.Format`）；
+4. 全局代码配置（Go：`Config.Format`）；
+5. 内置默认 `auto`。
+
+任一层本身可为 `auto`，随后按上述 TTY 解析；某层给出具体值即钉死格式。
+命令行层（1–2）高于代码层（3–4）；代码层内，逐命令 hint（3）高于全局
+配置（4）。
+
+**与自定义输出的关系。** 显式的非 `text` 格式（json/jsonl/markdown）绕过
+命令的自定义 CLI 输出函数（§9.5）——机器与替代格式压过逐命令样式，正如
+`--json` 一样；只有 `text`（含 `auto` 解析为 `text`）走自定义输出链。非法
+的 `--format` 取值，或 `--format` 缺参数，是用法错误（退出码 2）。在机器
+格式（json/jsonl）下，命令错误以 §8.6 错误对象写到 **stderr**（json 美化、
+jsonl 紧凑），取代纯文本行；stdout 绝不承载错误，退出码不变（§10.5）。
 
 **全称与冲突规则。** 规范的、始终可用的形式是带命名空间的内置参数
 `--xyz.format=<fmt>`（§13.3），在 `--` 终止符之前任意位置消费；因带命名
@@ -481,8 +503,22 @@ CLI 输出函数（§9.5）——机器与替代格式压过逐命令样式，�
 识别为全局格式选择器。当命令确实定义了同名 flag，裸标志归命令所有（作为
 普通 §10.2 flag 绑定到命令字段），全局格式只来自 `--xyz.format`。这是 xyz
 内置参数的通则：全称 `--xyz.<name>` 永远可用，裸 `--<name>` 简写只在不
-遮蔽用户自定义参数时才生效。生效格式的优先级：裸 `--format`/`--json`
-（未被遮蔽时）> `--xyz.format` > `text`。
+遮蔽用户自定义参数时才生效。
+
+**10.7a. 格式与样式是两条独立的轴。** TTY 信号驱动两条正交、可独立配置
+的轴，MUST NOT 合并成单个「交互式」开关：
+
+- **格式轴**（编码——本节）：`auto|text|json|jsonl|markdown`；
+- **样式轴**（呈现——彩色/富排版，*保留*）：将来的 `auto|always|never`
+  彩色模式（Go：规划中的 `Config.Color`），其 `auto` 由*同一个* TTY 探测
+  **以及** `NO_COLOR`/`TERM=dumb` 与强制覆盖共同解析。
+
+二者共用同一底层 TTY 检测，但各自独立解析，因为其覆盖语义不同：真实终端里
+的 `NO_COLOR` 只去色、*不*改变格式；管道到 `less -R` 可强制开彩色而格式仍
+为管道默认；用户也可能在交互式终端里就要 `--format jsonl`。参考惯例：主流
+CLI（gh、kubectl、docker）管道时*格式*仍是文本/表格、只有*彩色*不同——即
+TTY 信号最显眼的作用在样式轴。SDK MAY 将来再实现样式轴；在此之前只有格式
+轴是规范性的，而共用的 TTY 探测正是样式轴日后接入的缝。
 
 ---
 
@@ -669,7 +705,7 @@ initialize 结果的 MCP `serverInfo`（§12.6）——`serverInfo.name` = 应�
 | `--default k=v`（可重复） | 通道默认 | serve/mcp 启动默认，补缺失的请求/调用键（§6.1） |
 | `--xyz.header k=v`（可重复） | 响应头 | 每个 HTTP 响应的静态上下文头，镜像进 MCP `_meta.xyz.headers`（§11.6/§12.8） |
 | `--xyz.no-server-headers` | 无服务器头 | 抑制自动 `X-App-*`/`X-XYZ-*` 头与 MCP `_meta.xyz`（§11.6/§12.8）；用户 `--xyz.header` 值仍生效 |
-| `--xyz.format=text\|json\|jsonl\|markdown` | 输出格式 | CLI 默认输出格式（§10.7）；裸 `--format`/`--json` 在未遮蔽时覆盖它 |
+| `--xyz.format=auto\|text\|json\|jsonl\|markdown` | 输出格式 | CLI 默认输出格式（§10.7）；`auto` 按 TTY 解析。命令行全局层——仅被裸 `--format`/`--json` 压过，压过逐命令 hint 与代码配置 |
 
 **13.4. 能力开关。** 运行时开关（no_cli / no_mcp / no_http）只禁用相应
 通道的运行时路径：模式词、`help`、`-v`、`completion` 继续工作；进入被禁

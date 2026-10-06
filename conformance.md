@@ -90,7 +90,7 @@ version when:
       argument forwards the entire argument list to the marked command;
       one default per parent (duplicate = registration error); empty
       argument lists, flags, explicit paths and aliases unaffected.
-- [ ] A.54 Output formats per §10.7: `--format text|json|jsonl|markdown`
+- [ ] A.54 Output formats per §10.7: `--format auto|text|json|jsonl|markdown`
       with `--json` as the `--format json` alias; text runs the §9.5 chain,
       the other three bypass a command's custom CLI output; jsonl emits one
       compact line per element for slices (a single line otherwise);
@@ -104,7 +104,16 @@ version when:
       as the global selector only when the target command defines no
       `format`/`json` flag — when it does, the bare flag binds to the
       command's field and the global format comes solely from `--xyz.format`;
-      precedence bare (unshadowed) > `--xyz.format` > text.
+      precedence bare (unshadowed) > `--xyz.format` > per-command hint >
+      code config > auto.
+- [ ] A.59 TTY-aware `auto` per §10.7/§10.7a: with no explicit format, an
+      interactive stdout (character device) resolves `auto` → the interactive
+      format (reference `text`) and a non-interactive stdout (pipe/redirect/
+      buffer) resolves → the piped format (reference `jsonl`); both halves are
+      configurable and the verdict is forceable for tests; the four-tier
+      precedence (bare flag > `--xyz.format` > per-command hint > code config
+      > auto) holds; format and style are separate axes — a TTY/NO_COLOR
+      change MUST NOT alter the resolved format.
 
 ### HTTP
 - [ ] A.27 Route conflicts are registration errors; commands without hints
