@@ -81,7 +81,7 @@ Closed by implementation in v0.4.0 (kept for provenance):
 **Class:** SDK limitation
 **Status:** closed-by-implementation
 **Detail:** Go v0.3.3 added `MCPHints.Name`; Rust carried it in xyz-rust
-v0.4.3 (`MCPHints.name`, grammar-checked at registration — override-only
+v0.4.2 (`MCPHints.name`, grammar-checked at registration — override-only
 advertisement and call routing, locked by `mcp::mcp_test::mcp_name_override`).
 
 ### D-rust-01 · spec §4.3 (Duration)
