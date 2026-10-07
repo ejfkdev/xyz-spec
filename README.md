@@ -24,7 +24,7 @@ beyond.
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
 | [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.5) | **v0.4.5** (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.4 | v0.4.4 (v0.4.5 on master, release pending) | Rust reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.6 | **v0.4.5** | Rust reference implementation |
 
 ### Compatibility matrix
 
@@ -33,22 +33,25 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.5 | v0.4.5 ✅ | implemented on master (release pending) |
+| v0.4.5 | v0.4.5 ✅ | 0.4.5–0.4.6 ✅ |
 | v0.4.4 | v0.4.4 | 0.4.4 ✅ |
 | v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
 (v0.4.3 was skipped for spec/xyz-go; xyz-rust used 0.4.3 for a crates.io
-build fix. The xyz-rust 0.4.x numbers are that crate's own and need not equal
-the spec version it targets.)
+build fix and 0.4.6 for a crates.io OpenAPI fix, both on existing anchors.
+The xyz-rust 0.4.x numbers are that crate's own and need not equal the spec
+version it targets.)
 
 The v0.4.5 surface — rich `openapi.json` (per-operation description,
 parameters with descriptions + rich schemas, requestBody, application-identity
 `info`) §11.3, GET+POST registered by default for a path-only command §11.1,
 and enriched per-command MCP tool metadata (`MCPHints.Title/Description/Meta`,
-`MCPFieldHint.Description`) §12.4 — is shipped by xyz-go v0.4.5; xyz-rust
-implements the same surface on master (release pending by request). The v0.4.4 surface (TTY-aware `--format auto`
+`MCPFieldHint.Description`) §12.4 — is shipped by xyz-go v0.4.5 and
+xyz-rust 0.4.5–0.4.6 (0.4.6 is a crates.io fix: `/openapi.json` `parameters`
+now also lists fields with no explicit `http` location, as `query`, matching
+the runtime binding). The v0.4.4 surface (TTY-aware `--format auto`
 §10.7, four mode words with `xyz.<word>` namespacing & shadowing §13.1,
 `help <command>` / mode `-h` §10.4/§13.2, per-request `Accept-Language`
 §11.7, runtime environment-context API §14 item 7) is shipped by xyz-go
