@@ -1,6 +1,6 @@
 # The xyz Specification
 
-**Version 0.4.4** · Status: Baseline · Last updated: 2026-10-06
+**Version 0.4.5** · Status: Baseline · Last updated: 2026-10-06
 
 This document is the normative contract for every xyz SDK. A library may call
 itself an *xyz SDK* only if it implements this specification. The key words
@@ -12,8 +12,8 @@ Reference implementations (normative anchors for ambiguous cases):
 
 | SDK | Path / package | Version baseline |
 |---|---|---|
-| xyz-go | `github.com/ejfkdev/xyz-go` (package name `xyz`) | v0.4.4 (this spec) |
-| xyz-rust | crates.io `xyz-rust` (lib `xyz-rust`; derive helpers in `xyz-rust-macros`) | 0.4.3 → spec v0.4.2 (spec v0.4.4 clauses pending) |
+| xyz-go | `github.com/ejfkdev/xyz-go` (package name `xyz`) | v0.4.5 (this spec) |
+| xyz-rust | crates.io `xyz-rust` (lib `xyz-rust`; derive helpers in `xyz-rust-macros`) | 0.4.4 → spec v0.4.4 (spec v0.4.5 clauses pending) |
 
 > Also available: [中文版](spec.zh-CN.md)
 

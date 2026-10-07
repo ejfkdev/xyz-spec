@@ -1,6 +1,6 @@
 # xyz 规范
 
-**Version 0.4.4** · Status: Baseline · Last updated: 2026-10-06
+**Version 0.4.5** · Status: Baseline · Last updated: 2026-10-06
 
 English: [spec.md](spec.md)；冲突时以英文为准
 
@@ -13,8 +13,8 @@ English: [spec.md](spec.md)；冲突时以英文为准
 
 | SDK | 路径 / 包 | 版本基线 |
 |---|---|---|
-| xyz-go | `github.com/ejfkdev/xyz-go`（包名 `xyz`） | v0.4.4（本规范） |
-| xyz-rust | crates.io `xyz-rust`（库 `xyz-rust`；derive 辅助在 `xyz-rust-macros`） | 0.4.3 → spec v0.4.2（spec v0.4.4 条款待补） |
+| xyz-go | `github.com/ejfkdev/xyz-go`（包名 `xyz`） | v0.4.5（本规范） |
+| xyz-rust | crates.io `xyz-rust`（库 `xyz-rust`；derive 辅助在 `xyz-rust-macros`） | 0.4.4 → spec v0.4.4（spec v0.4.5 条款待补） |
 
 > 英文原版：[spec.md](spec.md)
 

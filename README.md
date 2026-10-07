@@ -14,7 +14,7 @@ beyond.
 
 | Document | What it is |
 |---|---|
-| [spec.md](spec.md) | **The normative contract** (v0.4.4). Definition vocabulary, types, defaults, validation, the invocation pipeline, error taxonomy (incl. rich code/detail/status and the shared error body), rendering (incl. per-channel output functions and CLI `--format`), the three frontends (incl. HTTP application-identity/SDK-version headers and MCP result `_meta`), the root dispatcher, embedding surface, experience conventions, governance. RFC 2119 language. |
+| [spec.md](spec.md) | **The normative contract** (v0.4.5). Definition vocabulary, types, defaults, validation, the invocation pipeline, error taxonomy (incl. rich code/detail/status and the shared error body), rendering (incl. per-channel output functions and CLI `--format`), the three frontends (incl. HTTP application-identity/SDK-version headers and MCP result `_meta`), the root dispatcher, embedding surface, experience conventions, governance. RFC 2119 language. |
 | [spec.zh-CN.md](spec.zh-CN.md) | Chinese mirror of spec.md (for readability; English is normative on conflict). |
 | [conformance.md](conformance.md) | The conformance programme: Class A/B checklists, the 11-command showcase fixture with byte-exact golden outputs, and the required feature matrix. |
 | [deviations.md](deviations.md) | The deviations register. Every SDK files here what differs from spec.md, classed as language-forced / SDK limitation / extension, statused open / resolved-in-spec / closed-by-implementation / retired, re-reviewed at every spec release. |
@@ -23,8 +23,8 @@ beyond.
 
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
-| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.4) | **v0.4.4** (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.3 | v0.4.2 (spec v0.4.4 clauses pending) | Rust reference implementation |
+| [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.5) | **v0.4.5** (baseline anchor) | Go reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.4 | v0.4.4 (spec v0.4.5 clauses pending) | Rust reference implementation |
 
 ### Compatibility matrix
 
@@ -33,20 +33,26 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.4 | v0.4.4 ✅ | 0.4.4 ✅ |
+| v0.4.5 | v0.4.5 ✅ | pending (0.4.4 → v0.4.4) |
+| v0.4.4 | v0.4.4 | 0.4.4 ✅ |
 | v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
 (v0.4.3 was skipped for spec/xyz-go; xyz-rust used 0.4.3 for a crates.io
-build fix.)
+build fix. The xyz-rust 0.4.x numbers are that crate's own and need not equal
+the spec version it targets.)
 
-The v0.4.4 surface — TTY-aware `--format auto` (§10.7), the four mode words
-with `xyz.<word>` namespacing & shadowing (§13.1), the `help <command>` /
-mode `-h` help (§10.4/§13.2), per-request `Accept-Language` (§11.7) and the
-runtime environment-context API (§14 item 7) — is shipped by xyz-go v0.4.4;
-xyz-rust ships the same surface as 0.4.4 (crates.io); a follow-up 0.4.5
-carries only internal fixes (broken-pipe exit semantics). The v0.4.2 surface (rich errors §8.5/§8.6,
+The v0.4.5 surface — rich `openapi.json` (per-operation description,
+parameters with descriptions + rich schemas, requestBody, application-identity
+`info`) §11.3, GET+POST registered by default for a path-only command §11.1,
+and enriched per-command MCP tool metadata (`MCPHints.Title/Description/Meta`,
+`MCPFieldHint.Description`) §12.4 — is shipped by xyz-go v0.4.5; xyz-rust
+catches up in a follow-up. The v0.4.4 surface (TTY-aware `--format auto`
+§10.7, four mode words with `xyz.<word>` namespacing & shadowing §13.1,
+`help <command>` / mode `-h` §10.4/§13.2, per-request `Accept-Language`
+§11.7, runtime environment-context API §14 item 7) is shipped by xyz-go
+v0.4.4 and xyz-rust 0.4.4. The v0.4.2 surface (rich errors §8.5/§8.6,
 CLI `--format` §10.7, application-identity headers §11.6, MCP `_meta` §12.8)
 is shipped by both xyz-go v0.4.2 and xyz-rust 0.4.2–0.4.3. MAY clauses (§9.5
 output functions, §11.6 headers, §12.8 `_meta`, §8.5 rich-error layers) impose
