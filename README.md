@@ -24,7 +24,7 @@ beyond.
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
 | [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.5) | **v0.4.5** (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.4 | v0.4.4 (spec v0.4.5 clauses pending) | Rust reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.4 | v0.4.4 (v0.4.5 on master, release pending) | Rust reference implementation |
 
 ### Compatibility matrix
 
@@ -33,7 +33,7 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.5 | v0.4.5 ✅ | pending (0.4.4 → v0.4.4) |
+| v0.4.5 | v0.4.5 ✅ | implemented on master (release pending) |
 | v0.4.4 | v0.4.4 | 0.4.4 ✅ |
 | v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
@@ -48,7 +48,7 @@ parameters with descriptions + rich schemas, requestBody, application-identity
 `info`) §11.3, GET+POST registered by default for a path-only command §11.1,
 and enriched per-command MCP tool metadata (`MCPHints.Title/Description/Meta`,
 `MCPFieldHint.Description`) §12.4 — is shipped by xyz-go v0.4.5; xyz-rust
-catches up in a follow-up. The v0.4.4 surface (TTY-aware `--format auto`
+implements the same surface on master (release pending by request). The v0.4.4 surface (TTY-aware `--format auto`
 §10.7, four mode words with `xyz.<word>` namespacing & shadowing §13.1,
 `help <command>` / mode `-h` §10.4/§13.2, per-request `Accept-Language`
 §11.7, runtime environment-context API §14 item 7) is shipped by xyz-go
