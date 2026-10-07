@@ -620,9 +620,13 @@ and the shared TTY probe is the seam the style axis plugs into.
 
 ## 11. HTTP frontend
 
-**11.1. Routes.** Commands with HTTP hints define `METHOD path` routes;
-`{name}` is a single-segment path parameter. Conflicting method+path pairs
-MUST be a registration error. Commands without HTTP hints are not routed.
+**11.1. Routes.** A command with an HTTP `path` is routed; `{name}` is a
+single-segment path parameter. The method(s) come from the HTTP hints: an
+empty method registers **both GET and POST** (the default — GET binds query
+params, POST binds a JSON/form body plus query, both through the same
+handler), and a method value pins one or more methods (a single method or a
+comma-separated list, e.g. `GET,POST,PUT`). Conflicting method+path pairs
+MUST be a registration error. Commands without an HTTP path are not routed.
 
 **11.2. Binding.** Validated order for building the argument map:
 interface defaults (base) → JSON body merge (methods other than GET/HEAD;
@@ -637,12 +641,20 @@ excluded by §4.1 receive header values keyed by the language field name.
 **11.3. Built-in endpoints** (MUST exist on every HTTP frontend):
 
 - `GET /healthz` → 200 with the exact body `{"status":"ok"}` + newline.
-- `GET /openapi.json` → OpenAPI 3.0.3 document generated from the same
-  `inputSchema`s; per-operation summary/parameters (path+query)/requestBody
-  (POST/PUT/PATCH)/responses (200 with the output schema content, plus the
-  taxonomy's 400/404/500 descriptions). `info.title`/`info.version` are
-  reference-pinned to `example service`/`1` until the spec introduces a
-  configurable identity for them.
+- `GET /openapi.json` → an OpenAPI 3.0.3 document generated from the same
+  `inputSchema`s. Per operation: `summary` (the command summary) and
+  `description` (the command description) when present; a `parameters` entry
+  for every path/query/header field carrying its wire name, location,
+  `required` (path parameters are always required), a `description` (the
+  field's `desc`) and a rich `schema` (type plus enum/default/format — the
+  same per-field schema the MCP `inputSchema` uses, not a bare type); a
+  `requestBody` (application/json, the input schema) for POST/PUT/PATCH; and
+  `responses` (200 with the output schema content, plus the taxonomy's
+  400/404/500 descriptions). One operation is emitted per registered method
+  (a default GET+POST command yields both a `get` and a `post` operation).
+  `info.title`/`info.version` are the application identity (the same values
+  reported as `X-App-Name`/`X-App-Version`, §11.6); the reference fallback is
+  `example service`/`1` when the application sets neither.
 
 **11.4. Middleware.** Served layers, outermost-first, in this fixed order:
 CORS → Bearer → Gzip → router. CORS: allowlisted origins (or `*`); OPTIONS
@@ -725,13 +737,29 @@ never silently degrade. Where an SDK does offer SSE (the Go SDK),
 restrict `Host` to loopback unless configured wider (the Rust SDK does this
 to prevent DNS rebinding).
 
-**12.4. Tools.** One tool per registered command: name per §12.4a,
-description per §3.3, `inputSchema` from the pipeline schema (§9),
-`outputSchema` from the result type when statically schematisable (absent
-otherwise). Annotations map from the `MCPHints` annotation strings: `read` →
-readOnlyHint true; `write` → readOnlyHint false; `destructive` →
-destructiveHint true; `idempotent` → idempotentHint true; `openworld` →
-openWorldHint true; `title:…` → title.
+**12.4. Tools.** One tool per registered command. The tool metadata is as rich
+as the shared definition allows, and every part is overridable per command
+(Go: `MCPHints`) while defaulting from the tags — the common case stays
+zero-config, and a command can override any single piece without touching the
+others:
+
+- `name` — per §12.4a;
+- `description` — the §3.3 merge of summary + description, overridable by
+  `MCPHints.Description`;
+- `title` — a human-friendly display name (carried as the SDK's
+  `annotations.title`), set by `MCPHints.Title` or a `title:…` annotation
+  string;
+- `inputSchema` — the pipeline schema (§9), carrying every field's
+  `desc`/enum/default/format; a field's description is overridable via
+  `MCPFieldHint.Description`;
+- `outputSchema` — from the result type when statically schematisable (absent
+  otherwise);
+- `annotations` — from the `MCPHints` annotation strings: `read` →
+  readOnlyHint true; `write` → readOnlyHint false; `destructive` →
+  destructiveHint true; `idempotent` → idempotentHint true; `openworld` →
+  openWorldHint true; `title:…` → title;
+- `_meta` — arbitrary per-tool metadata from `MCPHints.Meta` (a key/value map
+  merged into the tool's reserved `_meta`).
 
 **12.4a. Tool-name override.** A command MAY pin its MCP tool name via
 `MCPHints{name}` (Go: `MCPHints.Name`; Rust: pending, see deviations). When
@@ -740,10 +768,6 @@ by `tools/call` — the dotted entry name stops being an MCP tool name but
 remains untouched for the CLI and HTTP channels, so each channel can carry
 its own naming. When empty (the default), the full §3.2 name applies. The
 override obeys the §3.1 grammar.
-Annotations map from the `MCPHints` annotation strings: `read` →
-readOnlyHint true; `write` → readOnlyHint false; `destructive` →
-destructiveHint true; `idempotent` → idempotentHint true; `openworld` →
-openWorldHint true; `title:…` → title.
 
 **12.5. Call result.** Success returns dual content — `textContent` rendered
 by the *CLI renderer* (§9.1, trailing newline trimmed) **and**

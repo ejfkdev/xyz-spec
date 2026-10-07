@@ -116,13 +116,20 @@ version when:
       change MUST NOT alter the resolved format.
 
 ### HTTP
-- [ ] A.27 Route conflicts are registration errors; commands without hints
-      are not routed (§11.1).
+- [ ] A.27 Route conflicts are registration errors; commands without an HTTP
+      path are not routed; a command with a path and no method registers BOTH
+      GET and POST (a method value pins one or a comma-separated list)
+      (§11.1).
 - [ ] A.28 Binding merge order and 1 MiB body cap; invalid JSON body =
       400 `{"error":"invalid JSON body"}` (§11.2).
 - [ ] A.29 `/healthz` body is byte-exact `{"status":"ok"}` + `\n`;
-      `/openapi.json` is a valid OpenAPI 3.0.3 doc from the same schemas
-      (§11.3).
+      `/openapi.json` is a valid OpenAPI 3.0.3 doc from the same schemas, and
+      is rich (§11.3): each operation carries summary + description, a
+      `parameters` entry per path/query/header field with its description and
+      a rich schema (type + enum/default/format, not a bare type) and correct
+      `required` (path params always), a requestBody for POST/PUT/PATCH, one
+      operation per registered method (GET+POST default yields both), and
+      `info.title`/`version` from the application identity.
 - [ ] A.30 Middleware order CORS → Bearer → Gzip and preflight-before-auth
       204 behavior (§11.4).
 - [ ] A.62 Per-request language per §11.7: `Accept-Language` resolves the
@@ -135,8 +142,12 @@ version when:
 - [ ] A.31 Uses the official MCP SDK of the language (§12.1).
 - [ ] A.32 Revision list & `--versions` pinning (§12.2); missing transport
       rejects fast with a clear error, exit 2 (§12.3).
-- [ ] A.33 Tool metadata: description merge, inputSchema, outputSchema,
-      annotation mapping (§12.4).
+- [ ] A.33 Tool metadata is rich and per-command overridable (§12.4):
+      description merge (or `MCPHints.Description` override), title
+      (`MCPHints.Title` / `title:…` → annotations.title), inputSchema with
+      field desc/enum/default/format (field description overridable via
+      `MCPFieldHint.Description`), outputSchema, annotation mapping, and
+      `_meta` from `MCPHints.Meta`.
 - [ ] A.34 Dual content results (textContent = CLI renderer, stripped newline;
       structuredContent = bare JSON) and isError failures with specific
       message (§12.5).

@@ -527,9 +527,11 @@ TTY 信号最显眼的作用在样式轴。SDK MAY 将来再实现样式轴；�
 
 ## 11. HTTP 前端
 
-**11.1. 路由。** 带 HTTP 提示的命令定义 `METHOD path` 路由；`{name}` 是
-单段路径参数。method+path 冲突配对 MUST 是注册错误。无 HTTP 提示的命令
-不参与路由。
+**11.1. 路由。** 带 HTTP `path` 的命令即参与路由；`{name}` 是单段路径
+参数。方法来自 HTTP 提示：方法为空则**同时注册 GET 与 POST**（默认——GET
+绑定 query 参数、POST 绑定 JSON/表单体加 query，二者走同一处理器）；方法
+有值则钉住一个或多个方法（单个方法或逗号分隔列表，如 `GET,POST,PUT`）。
+method+path 冲突配对 MUST 是注册错误。无 HTTP path 的命令不参与路由。
 
 **11.2. 绑定。** 构建参数 map 的校验顺序：接口默认值（基底）→ JSON body
 合并（GET/HEAD 以外的方法；读取上限 SHOULD 为 1 MiB；body 不可解析 = 400
@@ -542,11 +544,16 @@ TTY 信号最显眼的作用在样式轴。SDK MAY 将来再实现样式轴；�
 **11.3. 内建端点**（每个 HTTP 前端 MUST 存在）：
 
 - `GET /healthz` → 200，body 恰为 `{"status":"ok"}` + 换行。
-- `GET /openapi.json` → 由同一批 `inputSchema` 生成的 OpenAPI 3.0.3 文档；
-  每个操作的 summary/parameters（path+query）/requestBody
-  （POST/PUT/PATCH）/responses（200 携带输出 schema 内容，外加分类学中的
-  400/404/500 描述）。`info.title`/`info.version` 参考实现固定为
-  `example service`/`1`，直到规范引入可配置的身份字段。
+- `GET /openapi.json` → 由同一批 `inputSchema` 生成的 OpenAPI 3.0.3 文档。
+  每个操作：`summary`（命令摘要）与 `description`（命令描述，存在时）；每个
+  path/query/header 字段一条 `parameters`，携带其线上名、位置、`required`
+  （路径参数恒为必填）、`description`（字段的 `desc`）与富 `schema`（类型加
+  enum/default/format——与 MCP `inputSchema` 同一份逐字段 schema，而非裸
+  类型）；POST/PUT/PATCH 带 `requestBody`（application/json，输入 schema）；
+  `responses`（200 携带输出 schema 内容，外加分类学的 400/404/500 描述）。
+  每个注册方法各产出一条操作（默认 GET+POST 命令同时产出 get 与 post）。
+  `info.title`/`info.version` 为应用身份（与 `X-App-Name`/`X-App-Version`
+  同源，§11.6）；应用未设置时参考回退为 `example service`/`1`。
 
 **11.4. 中间件。** 服务的层级，从最外层开始，按此固定顺序：CORS →
 Bearer → Gzip → router。CORS：允许的 origin 列表（或 `*`）；OPTIONS 预检
@@ -616,12 +623,24 @@ HTTP）。传输可用性跟随本地官方 SDK：当某传输在那里不存在
 无状态模式。Streamable HTTP 默认 SHOULD 把 `Host` 限制在 loopback，除非
 显式放宽配置（Rust SDK 即如此，以防 DNS rebinding）。
 
-**12.4. 工具。** 每条注册命令一个工具：名称依 §12.4a，描述依 §3.3，
-`inputSchema` 来自管线 schema（§9），`outputSchema` 来自可静态模式化的结
-果类型（否则缺省）。注解由 `MCPHints` 注解字符串映射而来：`read` →
-readOnlyHint true；`write` → readOnlyHint false；`destructive` →
-destructiveHint true；`idempotent` → idempotentHint true；`openworld` →
-openWorldHint true；`title:…` → title。
+**12.4. 工具。** 每条注册命令一个工具。工具元数据在共享定义允许的范围内
+尽量丰富，且每一部分都可逐命令覆盖（Go：`MCPHints`）、默认取自 tag——常见
+情形零配置，而单条命令可只覆盖其中任意一项而不影响其余：
+
+- `name` —— 依 §12.4a；
+- `description` —— §3.3 的 summary + description 合并，可由
+  `MCPHints.Description` 覆盖；
+- `title` —— 人类友好的显示名（作为 SDK 的 `annotations.title` 承载），由
+  `MCPHints.Title` 或 `title:…` 注解字符串设置；
+- `inputSchema` —— 管线 schema（§9），携带每个字段的 `desc`/enum/default/
+  format；字段描述可由 `MCPFieldHint.Description` 覆盖；
+- `outputSchema` —— 来自可静态模式化的结果类型（否则缺省）；
+- `annotations` —— 由 `MCPHints` 注解字符串映射：`read` → readOnlyHint
+  true；`write` → readOnlyHint false；`destructive` → destructiveHint true；
+  `idempotent` → idempotentHint true；`openworld` → openWorldHint true；
+  `title:…` → title；
+- `_meta` —— 来自 `MCPHints.Meta` 的任意逐工具元数据（键值映射，并入工具
+  保留的 `_meta`）。
 
 **12.4a. 工具名覆写。** 命令 MAY 通过 `MCPHints{name}`（Go：
 `MCPHints.Name`；Rust：待移植，见 deviations）为其 MCP 工具名钉名。设置
