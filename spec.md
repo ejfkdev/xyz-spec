@@ -752,8 +752,13 @@ others:
 - `inputSchema` — the pipeline schema (§9), carrying every field's
   `desc`/enum/default/format; a field's description is overridable via
   `MCPFieldHint.Description`;
-- `outputSchema` — from the result type when statically schematisable (absent
-  otherwise);
+- `outputSchema` — an *object*-typed schema from the result type, present
+  only when the result type statically schematises to a JSON object **and**
+  the negotiated revision carries the field (2025-06-18 and later); absent
+  otherwise. A non-object result type MUST NOT advertise a schema: with a
+  schema present the server owes a conforming `structuredContent`, and no
+  non-object schema can have one — strictly validating clients reject the
+  whole `tools/list` otherwise (ddc#9);
 - `annotations` — from the `MCPHints` annotation strings: `read` →
   readOnlyHint true; `write` → readOnlyHint false; `destructive` →
   destructiveHint true; `idempotent` → idempotentHint true; `openworld` →
@@ -769,9 +774,12 @@ remains untouched for the CLI and HTTP channels, so each channel can carry
 its own naming. When empty (the default), the full §3.2 name applies. The
 override obeys the §3.1 grammar.
 
-**12.5. Call result.** Success returns dual content — `textContent` rendered
-by the *CLI renderer* (§9.1, trailing newline trimmed) **and**
-`structuredContent` as the bare JSON value. Failure returns
+**12.5. Call result.** Success returns `textContent` rendered by the *CLI
+renderer* (§9.1, trailing newline trimmed); when — and only when — the result
+value is a JSON object **and** the negotiated revision carries the field
+(2025-06-18 and later), `structuredContent` carries that object as well
+(`structuredContent` is specified as a JSON *object*; a bare array or scalar
+MUST NOT be placed there). Failure returns
 `isError: true` whose text is the classified error's most specific message
 (§8.4). MCP interface defaults only fill keys the caller did not supply
 (§6.3).
@@ -801,7 +809,8 @@ base64 strings, never bare bytes. The three frontends project it:
 - **HTTP**: the envelope is the response body as-is (self-describing JSON,
   base64 inline);
 - **MCP**: `Content` carries the blocks verbatim and `structuredContent`
-  the envelope, so text-first clients and structured consumers both work.
+  the envelope, so text-first clients and structured consumers both work (the
+  envelope is an object, so it follows §12.5's revision gate).
 
 An SDK that renders an object whose sole key is `content` with entries of
 exactly those shapes MUST treat it as the block envelope; the reserved

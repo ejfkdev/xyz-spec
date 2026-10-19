@@ -190,6 +190,12 @@ version when:
       per-request language from context; the TTY probe is shared by the format
       axis (§10.7) and the reserved style axis (§10.7a).
 
+- [ ] A.64 MCP structured output per §12.3/§12.5: `outputSchema` is emitted
+      only for object-typed result types and only when the negotiated revision
+      is 2025-06-18 or later; `structuredContent` accompanies it only for
+      object values; array/scalar results travel through `textContent` alone
+      (strict clients reject non-object schemas and bare values, ddc#9).
+
 ## 2. Class B — SHOULD
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact

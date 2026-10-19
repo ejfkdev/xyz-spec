@@ -24,7 +24,7 @@ beyond.
 | SDK | Package | Specification target | Notes |
 |---|---|---|---|
 | [xyz-go](https://github.com/ejfkdev/xyz-go) | `github.com/ejfkdev/xyz-go` (v0.4.5) | **v0.4.5** (baseline anchor) | Go reference implementation |
-| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.8 | **v0.4.5** | Rust reference implementation |
+| [xyz-rust](https://github.com/ejfkdev/xyz-rust) | crates.io `xyz-rust` 0.4.9 | **v0.4.5** | Rust reference implementation |
 
 ### Compatibility matrix
 
@@ -33,27 +33,29 @@ Each SDK release targets exactly one spec version (the anchor is recorded in
 
 | spec | xyz-go | xyz-rust |
 |---|---|---|
-| v0.4.5 | v0.4.5 ✅ | 0.4.5–0.4.8 ✅ |
+| v0.4.5 | v0.4.5 ✅ | 0.4.5–0.4.9 ✅ |
 | v0.4.4 | v0.4.4 | 0.4.4 ✅ |
 | v0.4.2 | v0.4.2 | 0.4.2–0.4.3 ✅ |
 | v0.4.1 | v0.4.1 | 0.4.2 |
 | v0.4.0 | v0.4.0 | 0.4.0 |
 
 (v0.4.3 was skipped for spec/xyz-go; xyz-rust used 0.4.3 for a crates.io
-build fix, 0.4.6 for a crates.io OpenAPI fix, and 0.4.7–0.4.8 for an MCP
+build fix, 0.4.6 for a crates.io OpenAPI fix, 0.4.7–0.4.8 for an MCP
 tools-capability fix plus a latest-dependency refresh (MSRV now declared as
-1.89), all on existing anchors. The xyz-rust 0.4.x numbers are that crate's
-own and need not equal the spec version it targets.)
+1.89), and 0.4.9 for the MCP structured-output gating of §12.3/§12.5
+(conformance A.64), all on existing anchors. The xyz-rust 0.4.x numbers are
+that crate's own and need not equal the spec version it targets.)
 
 The v0.4.5 surface — rich `openapi.json` (per-operation description,
 parameters with descriptions + rich schemas, requestBody, application-identity
 `info`) §11.3, GET+POST registered by default for a path-only command §11.1,
 and enriched per-command MCP tool metadata (`MCPHints.Title/Description/Meta`,
 `MCPFieldHint.Description`) §12.4 — is shipped by xyz-go v0.4.5 and
-xyz-rust 0.4.5–0.4.8 (0.4.6: `/openapi.json` `parameters` also lists fields
+xyz-rust 0.4.5–0.4.9 (0.4.6: `/openapi.json` `parameters` also lists fields
 with no explicit `http` location, as `query`, matching the runtime binding;
 0.4.7: `initialize` declares the MCP tools capability, plus a
-latest-dependency refresh; 0.4.8: `rust-version` declared). The v0.4.4 surface (TTY-aware `--format auto`
+latest-dependency refresh; 0.4.8: `rust-version` declared; 0.4.9: MCP
+structured-output gating per §12.3/§12.5 and A.64). The v0.4.4 surface (TTY-aware `--format auto`
 §10.7, four mode words with `xyz.<word>` namespacing & shadowing §13.1,
 `help <command>` / mode `-h` §10.4/§13.2, per-request `Accept-Language`
 §11.7, runtime environment-context API §14 item 7) is shipped by xyz-go

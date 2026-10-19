@@ -634,7 +634,11 @@ HTTP）。传输可用性跟随本地官方 SDK：当某传输在那里不存在
   `MCPHints.Title` 或 `title:…` 注解字符串设置；
 - `inputSchema` —— 管线 schema（§9），携带每个字段的 `desc`/enum/default/
   format；字段描述可由 `MCPFieldHint.Description` 覆盖；
-- `outputSchema` —— 来自可静态模式化的结果类型（否则缺省）；
+- `outputSchema` —— 来自结果类型的*对象型* schema，仅当结果类型可静态模式化为
+  JSON object **且**协商修订携带该字段（2025-06-18 及以后）时存在，否则缺省。
+  非 object 的结果类型**不得**声明 schema：声明了 schema 就必须提供合规的
+  `structuredContent`，而任何非 object schema 都不可能有合规结果——严格校验的
+  客户端会因此拒绝整个 `tools/list`（ddc#9）；
 - `annotations` —— 由 `MCPHints` 注解字符串映射：`read` → readOnlyHint
   true；`write` → readOnlyHint false；`destructive` → destructiveHint true；
   `idempotent` → idempotentHint true；`openworld` → openWorldHint true；
@@ -648,9 +652,11 @@ HTTP）。传输可用性跟随本地官方 SDK：当某传输在那里不存在
 点分原名不再作为 MCP 工具名，但 CLI 与 HTTP 通道保持不变，各通道可携带
 各自的命名。为空（默认）时按 §3.2 用完整名。覆写名须满足 §3.1 文法。
 
-**12.5. 调用结果。** 成功返回双重内容——由 *CLI 渲染器*渲染的
-`textContent`（§9.1，修剪末尾换行）**以及**作为裸 JSON 值的
-`structuredContent`。失败返回 `isError: true`，其文本是分类错误的最具体
+**12.5. 调用结果。** 成功返回由 *CLI 渲染器*渲染的 `textContent`（§9.1，
+修剪末尾换行）；仅当结果值是 JSON object **且**协商修订携带该字段
+（2025-06-18 及以后）时，`structuredContent` 才同时携带该 object
+（`structuredContent` 规范面为 JSON *object*，裸数组/标量**不得**放入）。
+失败返回 `isError: true`，其文本是分类错误的最具体
 消息（§8.4）。MCP 接口默认值只填充调用者未提供的键（§6.3）。
 
 **12.6. 服务器身份。** MCP `serverInfo` 标识的是*应用程序*（用 xyz 构建的
@@ -672,7 +678,8 @@ resource）以替代纯值。块以 MCP `Content` 原样传递；`structuredCont
 - **CLI**：文本块内联输出；二进制块写入系统临时目录的文件，以文件路径替
   代内容输出——大载荷不进终端；
 - **HTTP**：信封即响应体（自描述 JSON，base64 内联）；
-- **MCP**：`Content` 原样携带块，`structuredContent` 持有信封——面向文本的
+- **MCP**：`Content` 原样携带块，`structuredContent` 持有信封（信封是 object，
+  同样遵循 §12.5 的修订门）——面向文本的
   客户端与结构化消费者同时可用。
 
 SDK 渲染"唯一键为 `content` 且各项恰好符合上述形状"的对象时 MUST 按块信封

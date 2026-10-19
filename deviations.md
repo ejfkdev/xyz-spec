@@ -36,7 +36,7 @@ Status vocabulary:
 Prior baselines held no deviations. xyz-go v0.4.5 implements spec v0.4.5 —
 including the §8.5/§8.6 rich errors, §10.7 `--format` (with the §10.7
 full-name/conflict rule), §11.6 application-identity + SDK-version response
-headers and §12.8 result `_meta` — except for one open deviation:
+headers and §12.8 result `_meta` — except for the open deviations below:
 
 - **D-go-01 · spec §4.7 (tagged unions / oneOf):** Class SDK limitation,
   Status open. Go has no language-native enum-argument support; the semantics
@@ -47,6 +47,15 @@ headers and §12.8 result `_meta` — except for one open deviation:
   skip policy) is a MAY and imposes no new obligation on a union-less SDK.
   §17.3 review at spec v0.4.5: unchanged — entry remains open until Go
   grows a union argument surface.
+
+- **D-go-04 · spec §12.3/§12.5 (MCP structured-output gating):** Class SDK
+  limitation, Status open. xyz-go attaches `outputSchema` to every
+  schematisable result type (arrays and scalars included) and always fills
+  `structuredContent` with the bare value; strictly validating MCP clients
+  reject the whole `tools/list` over the non-object schemas (ddc#9). The
+  settled behaviour is xyz-rust 0.4.9: object-only `outputSchema`,
+  `structuredContent` only for object values, both gated to negotiated
+  revisions ≥ 2025-06-18 (conformance A.64). A Go implementation is pending.
 
 Resolved in v0.4.2 (absorbed into the spec, kept for provenance):
 
