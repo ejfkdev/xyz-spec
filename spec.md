@@ -632,11 +632,18 @@ MUST be a registration error. Commands without an HTTP path are not routed.
 interface defaults (base) → JSON body merge (methods other than GET/HEAD;
 read cap SHOULD be 1 MiB) → per-field: path params (wire name), query
 values (default location; slice fields collect all repeats, others take the
-first), headers (name via §4.6), form fields (request body only). A body
-that fails JSON parsing is a 400 strictly when the request *declares*
-`Content-Type: application/json`; an undeclared body simply does not merge.
-Fields
-excluded by §4.1 receive header values keyed by the language field name.
+first), headers (name via §4.6), form fields (request body only). The §4.6
+wire-name override applies to query and form lookups as well — it is the name
+the OpenAPI document advertises (§11.3). **Unknown query parameters MUST be
+rejected** with 400 and the shared error body (§8.6, `kind: invalid_input`)
+naming the parameter and the route's accepted set (the query-located fields'
+wire names), unless the application opts out (`Config.AllowUnknownQuery` /
+`allow_unknown_query`; CLI `--xyz.allow-unknown-query`). Silently ignoring
+them lets a typo or a removed parameter look effective. JSON body keys are
+not subject to this check. A body that fails JSON parsing is a 400 strictly
+when the request *declares* `Content-Type: application/json`; an undeclared
+body simply does not merge. Fields excluded by §4.1 receive header values
+keyed by the language field name.
 
 **11.3. Built-in endpoints** (MUST exist on every HTTP frontend):
 

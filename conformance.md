@@ -196,6 +196,12 @@ version when:
       object values; array/scalar results travel through `textContent` alone
       (strict clients reject non-object schemas and bare values, ddc#9).
 
+- [ ] A.65 HTTP query strictness per §11.2: unknown query parameters answer
+      400 `invalid_input` naming the parameter and the route's accepted set;
+      the accepted set and the binding use the §4.6 wire name (query and form
+      included); an opt-out (`allow_unknown_query` / `--xyz.allow-unknown-query`)
+      restores silent acceptance.
+
 ## 2. Class B — SHOULD
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact

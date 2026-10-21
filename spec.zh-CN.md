@@ -537,9 +537,14 @@ method+path 冲突配对 MUST 是注册错误。无 HTTP path 的命令不参与
 合并（GET/HEAD 以外的方法；读取上限 SHOULD 为 1 MiB；body 不可解析 = 400
 `{"error":"invalid JSON body"}`）→ 逐字段：路径参数（线上名）、query 值
 （默认位置；切片字段收集全部重复值，其他字段取第一个）、headers（名称
-按 §4.6）、form 字段（仅取请求体）。JSON 解析失败的请求体只有在该请求**声明**了
-`Content-Type: application/json` 时才判 400；未声明的体只是不参与合并。被 §4.1 排除的字段按键为语言字段名
-接收 header 值。
+按 §4.6）、form 字段（仅取请求体）。§4.6 的线上名覆写同样适用于 query 与
+form 查找——它就是 OpenAPI 文档（§11.3）公布的名称。**未知 query 参数必须拒绝**：
+返回 400 与共享错误体（§8.6，`kind: invalid_input`），消息给出参数名与该路由的
+允许集（以 query 绑定的字段的线上名）；应用可显式放宽（`Config.AllowUnknownQuery` /
+`allow_unknown_query`；命令行 `--xyz.allow-unknown-query`）。静默忽略会让拼错或
+已移除的参数看起来生效。JSON body 的键不受此检查约束。JSON 解析失败的请求体只有
+在该请求**声明**了 `Content-Type: application/json` 时才判 400；未声明的体只是不
+参与合并。被 §4.1 排除的字段按键为语言字段名接收 header 值。
 
 **11.3. 内建端点**（每个 HTTP 前端 MUST 存在）：
 

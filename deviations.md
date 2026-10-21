@@ -57,6 +57,15 @@ headers and §12.8 result `_meta` — except for the open deviations below:
   `structuredContent` only for object values, both gated to negotiated
   revisions ≥ 2025-06-18 (conformance A.64). A Go implementation is pending.
 
+- **D-go-05 · spec §11.2/§4.6 (HTTP query strictness & wire-name override):**
+  Class SDK limitation, Status open. xyz-go binds query and form values by the
+  JSON name and silently ignores unknown query parameters, so a request with
+  a typo or a removed parameter still succeeds, and a `httpName`-overridden
+  query/form field reads nothing while `/openapi.json` advertises the
+  override. The settled behaviour is xyz-rust 0.4.12: strict by default with
+  the `allow_unknown_query` opt-out, and §4.6 names applied to query/form
+  lookups (conformance A.65). A Go implementation is pending.
+
 Resolved in v0.4.2 (absorbed into the spec, kept for provenance):
 
 - **D-go-03 · spec §9.5 (per-channel output functions):** Class extension,
