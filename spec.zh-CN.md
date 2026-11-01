@@ -626,7 +626,9 @@ HTTP）。传输可用性跟随本地官方 SDK：当某传输在那里不存在
 出——绝不静默降级。SDK 若确实提供 SSE（Go SDK），`mcp sse` 服务 ≤
 `2025-11-25` 的修订；以 streamable HTTP 服务 `2026-07-28` 需要
 无状态模式。Streamable HTTP 默认 SHOULD 把 `Host` 限制在 loopback，除非
-显式放宽配置（Rust SDK 即如此，以防 DNS rebinding）。
+显式放宽配置（Rust SDK 即如此，以防 DNS rebinding）。stdio 采用换行分隔的
+JSON-RPC 帧：**最后一条不带结尾换行**的消息在 EOF 时同样必须被处理（若 SDK
+的传输层会丢弃残余字节，应自行补上分隔符）。
 
 **12.4. 工具。** 每条注册命令一个工具。工具元数据在共享定义允许的范围内
 尽量丰富，且每一部分都可逐命令覆盖（Go：`MCPHints`）、默认取自 tag——常见

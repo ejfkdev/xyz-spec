@@ -742,7 +742,10 @@ never silently degrade. Where an SDK does offer SSE (the Go SDK),
 `mcp sse` serves revisions ≤ `2025-11-25`; streamable HTTP serving
 `2026-07-28` requires stateless mode. Streamable HTTP defaults SHOULD
 restrict `Host` to loopback unless configured wider (the Rust SDK does this
-to prevent DNS rebinding).
+to prevent DNS rebinding). stdio framing is newline-delimited JSON-RPC: a
+final message **without** a trailing newline MUST still be processed at EOF
+(an SDK whose transport discards the residual bytes appends the delimiter
+itself).
 
 **12.4. Tools.** One tool per registered command. The tool metadata is as rich
 as the shared definition allows, and every part is overridable per command

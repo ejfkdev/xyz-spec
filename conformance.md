@@ -202,6 +202,9 @@ version when:
       included); an opt-out (`allow_unknown_query` / `--xyz.allow-unknown-query`)
       restores silent acceptance.
 
+- [ ] A.66 stdio framing per §12.3: newline-delimited JSON-RPC; a final
+      message without a trailing newline is still processed at EOF.
+
 ## 2. Class B — SHOULD
 
 - [ ] B.1 Golden-output tests compare against §3.3 fixtures (byte-exact
